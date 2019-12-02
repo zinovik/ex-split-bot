@@ -1,0 +1,10 @@
+version: "3.4"
+
+services:
+  api:
+    build: .
+    volumes:
+      - .:/app
+      - /app/node_modules/
+    ports:
+      - 9000:9000
