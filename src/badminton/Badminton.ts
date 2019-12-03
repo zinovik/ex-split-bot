@@ -2,19 +2,24 @@ import { IBadminton } from './IBadminton.interface';
 import { IConfigurationService } from '../configuration/IConfigurationService.interface';
 import { IDatabaseService } from '../database/IDatabaseService.interface';
 import { ITelegramService } from '../telegram/ITelegramService.interface';
+import { IMessageService } from '../message/IMessageService.interface';
 
 import { IMessageBody } from '../common/model/IMessageBody.interface';
 import { ICallbackMessageBody } from '../common/model/ICallbackMessageBody.interface';
+
+const GAME_COST = 6;
 
 export class Badminton implements IBadminton {
   constructor(
     private readonly configurationService: IConfigurationService,
     private readonly databaseService: IDatabaseService,
     private readonly telegramService: ITelegramService,
+    private readonly messageService: IMessageService,
   ) {
     this.configurationService = configurationService;
     this.databaseService = databaseService;
     this.telegramService = telegramService;
+    this.messageService = messageService;
   }
 
   async process(message: string): Promise<boolean> {
@@ -41,22 +46,27 @@ export class Badminton implements IBadminton {
       message: {
         text: messageTextDirty,
         chat: { id: chatId },
-        from: { first_name: firstName },
+        from: { first_name: firstName, username },
       },
     } = messageParsed;
 
     if (chatId !== channelId) {
-      return true;
+      return false;
     }
 
     const playRegExp = new RegExp(/.*[0-9].*?.*/, 'gm');
 
     const messageText = messageTextDirty.trim().toLowerCase();
 
-    console.log(messageText);
-    console.log(playRegExp.test(messageText));
+    if (messageText === 'cancel') {
+      // TODO: cancel invite
+    }
 
-    const text = `${firstName} invites to play today\n\nplay: \n\nskip: \n\npay: `;
+    if (!playRegExp.test(messageText)) {
+      return false;
+    }
+
+    const text = `${firstName} invites to play today!\n\nplay: ${username}\n\nskip: \n\npay: ${username}`;
 
     const replyMarkup = {
       inline_keyboard: [
@@ -80,9 +90,6 @@ export class Badminton implements IBadminton {
   }
 
   private async processCallbackMessage(messageParsed: ICallbackMessageBody): Promise<boolean> {
-    console.log(messageParsed.callback_query.data);
-    console.log(messageParsed.callback_query.from.username);
-
     const {
       callback_query: {
         data,
@@ -97,54 +104,100 @@ export class Badminton implements IBadminton {
     } = messageParsed;
 
     const textArray = text.split('\n\n');
-    const play = textArray[1]
+    let playUsers = textArray[1]
       .replace('play: ', '')
       .split(', ')
       .filter(v => v);
-    const skip = textArray[2]
+    let skipUsers = textArray[2]
       .replace('skip: ', '')
       .split(', ')
       .filter(v => v);
-    let pay = textArray[3].replace('pay: ', '');
-    console.log(play, skip, pay);
+    let payUser = textArray[3].replace('pay: ', '').replace('pay:', '');
 
     switch (data) {
       case 'play':
-        // if
-        play.push(username);
+        if (playUsers.includes(username)) {
+          playUsers = playUsers.filter(playUser => playUser !== username);
+
+          if (payUser === username) {
+            payUser = '';
+          }
+        } else {
+          playUsers.push(username);
+
+          skipUsers = skipUsers.filter(skipUser => skipUser !== username);
+        }
         break;
+
       case 'skip':
-        // if
-        skip.push(username);
-        // code block
+        if (skipUsers.includes(username)) {
+          skipUsers = skipUsers.filter(skipUser => skipUser !== username);
+        } else {
+          skipUsers.push(username);
+
+          playUsers = playUsers.filter(playUser => playUser !== username);
+
+          if (payUser === username) {
+            payUser = '';
+          }
+        }
         break;
+
       case 'pay':
-        // if
-        pay = username;
-        // code block
+        if (payUser === username) {
+          payUser = '';
+        } else {
+          payUser = username;
+
+          if (!playUsers.includes(username)) {
+            playUsers.push(username);
+          }
+        }
         break;
+
+      case 'free':
+        payUser = 'free';
+        break;
+
       default:
-      // code block
+        return false;
     }
 
-    console.log(play, skip, pay);
-    const newText = `${textArray[0]}\n\nplay: ${play.join(', ')}\n\nskip: ${skip.join(', ')}\n\npay: ${pay}`;
+    const newText = `${textArray[0]}\n\nplay: ${playUsers.join(', ')}\n\nskip: ${skipUsers.join(', ')}\n\npay: ${payUser}`;
+
+    const playersNumber = playUsers.length;
+    const gameCost = GAME_COST / playersNumber;
+    let balances = '\n\nBalances:';
+
+    for (let i = 0; i < playUsers.length; i++) {
+      const userBalance = await this.databaseService.getUserBalance(playUsers[i]);
+      let userPay = 0;
+
+      if (payUser) {
+        if (payUser === playUsers[i]) {
+          userPay += GAME_COST;
+        }
+
+        userPay -= gameCost;
+      }
+
+      await this.databaseService.setUserBalance(playUsers[i], userBalance + userPay);
+
+      balances += `\n${playUsers[i]}: ${userBalance + userPay} (${userPay})`;
+    }
 
     try {
       await this.telegramService.editMessageText({
-        text: newText,
+        text: `${newText}${balances}`,
         chatId,
         messageId,
         replyMarkup: JSON.stringify(replyMarkup),
       });
     } catch (error) {
       console.error('Error sending telegram message: ', error.message);
-      console.log(error);
       return false;
     }
 
     return true;
   }
 }
-
-//cancel message

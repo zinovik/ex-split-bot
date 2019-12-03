@@ -1,4 +1,4 @@
 export interface IDatabaseService {
-  get(key: string): Promise<any>;
-  set(key: string, value: any): Promise<void>;
+  getUserBalance(username: string): Promise<number>;
+  setUserBalance(username: string, balance: number): Promise<void>;
 }
