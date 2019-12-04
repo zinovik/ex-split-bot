@@ -1,3 +1,9 @@
 export interface IMessageService {
-  getGameInvitation(username: string): Promise<string>;
+  getGameInvitation(parameters: {
+    gameNumber: number;
+    creator: string;
+    playUsers: string[];
+    skipUsers: string[];
+    payUsers: string[];
+  }): Promise<string>;
 }

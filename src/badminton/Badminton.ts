@@ -22,7 +22,8 @@ export class Badminton implements IBadminton {
     this.messageService = messageService;
   }
 
-  async process(message: string): Promise<boolean> {
+  async processMessage(message: string): Promise<boolean> {
+    this.databaseService.getUserBalance(123);
     let messageParsed: any;
 
     try {
@@ -36,17 +37,17 @@ export class Badminton implements IBadminton {
       return await this.processCallbackMessage(messageParsed as ICallbackMessageBody);
     }
 
-    return await this.processMessage(messageParsed as IMessageBody);
+    return await this.processInviteMessage(messageParsed as IMessageBody);
   }
 
-  private async processMessage(messageParsed: IMessageBody): Promise<boolean> {
+  private async processInviteMessage(messageParsed: IMessageBody): Promise<boolean> {
     const { channelId } = this.configurationService.getConfiguration();
 
     const {
       message: {
         text: messageTextDirty,
         chat: { id: chatId },
-        from: { first_name: firstName, username },
+        from: { first_name: firstName, last_name: lastName, username, id: userId },
       },
     } = messageParsed;
 
@@ -54,19 +55,43 @@ export class Badminton implements IBadminton {
       return false;
     }
 
-    const playRegExp = new RegExp(/.*[0-9].*?.*/, 'gm');
-
     const messageText = messageTextDirty.trim().toLowerCase();
 
     if (messageText === 'cancel') {
       // TODO: cancel invite
     }
 
+    const playRegExp = new RegExp(/.*[0-9].*?.*/, 'gm');
     if (!playRegExp.test(messageText)) {
       return false;
     }
 
-    const text = `${firstName} invites to play today!\n\nplay: ${username}\n\nskip: \n\npay: ${username}`;
+    return await this.createGame({ userId, chatId, username, firstName, lastName });
+  }
+
+  private async createGame({
+    userId,
+    chatId,
+    username,
+    firstName,
+    lastName,
+  }: {
+    userId: number;
+    chatId: number;
+    username: string;
+    firstName: string;
+    lastName: string;
+  }): Promise<boolean> {
+    await this.databaseService.createGame({
+      userId,
+      price: 6,
+      username,
+      firstName,
+      lastName,
+    });
+    return false;
+
+    const text = `${username} invites to play today!\n\nplay: ${username}\n\nskip: \n\npay: ${username}`;
 
     const replyMarkup = {
       inline_keyboard: [

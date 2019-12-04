@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 
 import { ConfigParameterNotDefinedError } from './error/ConfigParameterNotDefinedError';
 import { Badminton } from '../badminton/Badminton';
-import { HardcodeConfigurationService } from '../configuration/HardcodeConfiguration.service';
+import { ConfigurationService } from '../configuration/Configuration.service';
 import { PostgresService } from '../database/Postgres.service';
 import { TelegramService } from '../telegram/Telegram.service';
 import { MessageService } from '../message/Message.service';
@@ -24,14 +24,14 @@ exports.handler = async ({ body }: IEvent, context: never) => {
   }
 
   const badminton = new Badminton(
-    new HardcodeConfigurationService(Number(process.env.CHANNEL_ID)),
+    new ConfigurationService(Number(process.env.CHANNEL_ID)),
     new PostgresService(process.env.DATABASE_URL),
     new TelegramService(process.env.TOKEN),
     new MessageService(),
   );
 
   try {
-    await badminton.process(body);
+    await badminton.processMessage(body);
   } catch (error) {
     console.error('Unexpected error occurred.', error.message);
   }

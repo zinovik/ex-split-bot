@@ -8,7 +8,26 @@ const PHRASES: { [key: string]: IPhrases } = { en, ru };
 const LANGUAGE = 'en';
 
 export class MessageService implements IMessageService {
-  async getGameInvitation(username: string): Promise<string> {
-    return `${username} ${PHRASES[LANGUAGE].invitation}`;
+  async getGameInvitation({
+    gameNumber,
+    creator,
+    playUsers,
+    skipUsers,
+    payUsers,
+  }: {
+    gameNumber: number;
+    creator: string;
+    playUsers: string[];
+    skipUsers: string[];
+    payUsers: string[];
+  }): Promise<string> {
+    console.log(gameNumber);
+
+    return (
+      `${creator} ${PHRASES[LANGUAGE].invitation}}\n\n` +
+      `play: ${playUsers.join(', ')}\n\n` +
+      `skip: ${skipUsers.join(', ')}\n\n` +
+      `pay: ${payUsers.join(', ')}`
+    );
   }
 }

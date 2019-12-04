@@ -1,6 +1,6 @@
 import { IConfigurationService } from './IConfigurationService.interface';
 
-export class HardcodeConfigurationService implements IConfigurationService {
+export class ConfigurationService implements IConfigurationService {
   constructor(private readonly channelId: number) {
     this.channelId = channelId;
   }

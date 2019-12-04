@@ -12,10 +12,10 @@
     "babel-polyfill": "^6.26.0",
     "dotenv": "^8.2.0",
     "pg": "^7.14.0",
-    "reflect-metadata": "^0.1.13",
     "typeorm": "^0.2.20"
   },
   "devDependencies": {
+    "@babel/plugin-proposal-decorators": "^7.7.4",
     "@babel/preset-env": "^7.7.4",
     "@babel/preset-typescript": "^7.7.4",
     "@types/aws-lambda": "^8.10.36",
