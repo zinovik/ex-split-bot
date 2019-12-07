@@ -12,21 +12,40 @@ import { IEvent } from './model/IEvent.interface';
 
 dotenv.config();
 
-exports.handler = async ({ body }: IEvent, context: never) => {
-  if (process.env.CHANNEL_ID === undefined) {
-    throw new ConfigParameterNotDefinedError('CHANNEL_ID');
+exports.handler = async ({ body, queryStringParameters: { token } }: IEvent, context: never) => {
+  if (process.env.GROUP_IDS === undefined) {
+    throw new ConfigParameterNotDefinedError('GROUP_IDS');
   }
-  if (process.env.TOKEN === undefined) {
-    throw new ConfigParameterNotDefinedError('TOKEN');
+  if (process.env.TELEGRAM_TOKEN === undefined) {
+    throw new ConfigParameterNotDefinedError('TELEGRAM_TOKEN');
   }
   if (process.env.DATABASE_URL === undefined) {
     throw new ConfigParameterNotDefinedError('DATABASE_URL');
   }
+  if (process.env.GAME_COST === undefined) {
+    throw new ConfigParameterNotDefinedError('GAME_COST');
+  }
+  if (process.env.TOKEN === undefined) {
+    throw new ConfigParameterNotDefinedError('TOKEN');
+  }
+
+  if (token !== process.env.TOKEN) {
+    return {
+      statusCode: 401,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        result: 'wrong token',
+      }),
+    };
+  }
 
   const badminton = new Badminton(
-    new ConfigurationService(Number(process.env.CHANNEL_ID)),
+    new ConfigurationService(
+      process.env.GROUP_IDS.split(',').map(groupId => Number(groupId)),
+      Number(process.env.GAME_COST),
+    ),
     new PostgresService(process.env.DATABASE_URL),
-    new TelegramService(process.env.TOKEN),
+    new TelegramService(process.env.TELEGRAM_TOKEN),
     new MessageService(),
   );
 

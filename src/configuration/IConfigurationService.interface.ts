@@ -1,3 +1,3 @@
 export interface IConfigurationService {
-  getConfiguration(): { channelId: number };
+  getConfiguration(): { groupIds: number[]; gameCost: number };
 }

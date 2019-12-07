@@ -1,20 +1,8 @@
-import {
-  Entity,
-  Unique,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  ManyToMany,
-  JoinTable,
-  ManyToOne,
-  JoinColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable, ManyToOne, JoinColumn } from 'typeorm';
 
 import { User } from './User.entity';
 
 @Entity('game')
-@Unique(['id'])
 export class Game {
   @PrimaryGeneratedColumn()
   public id: number;
@@ -25,23 +13,24 @@ export class Game {
   @ManyToMany(
     type => User,
     user => user.playGames,
+    { nullable: true },
   )
   @JoinTable({ name: 'play' })
   public playUsers: User[];
 
-  @ManyToMany(
+  @ManyToOne(
     type => User,
-    user => user.skipGames,
+    user => user.createdGames,
+    { nullable: true },
   )
-  @JoinTable({ name: 'skip' })
-  public skipUsers: User[];
+  @JoinColumn({ name: 'pay_by' })
+  public payBy: User | null;
 
-  @ManyToMany(
-    type => User,
-    user => user.payGames,
-  )
-  @JoinTable({ name: 'pay' })
-  public payUsers: User[];
+  @Column('boolean', { name: 'is_free' })
+  public isFree: boolean;
+
+  @Column('boolean', { name: 'is_done' })
+  public isDone: boolean;
 
   @CreateDateColumn({ name: 'created_at' })
   public createdAt: Date;

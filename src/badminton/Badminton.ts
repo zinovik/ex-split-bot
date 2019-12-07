@@ -6,8 +6,7 @@ import { IMessageService } from '../message/IMessageService.interface';
 
 import { IMessageBody } from '../common/model/IMessageBody.interface';
 import { ICallbackMessageBody } from '../common/model/ICallbackMessageBody.interface';
-
-const GAME_COST = 6;
+import { User } from '../database/entities/User.entity';
 
 export class Badminton implements IBadminton {
   constructor(
@@ -23,7 +22,6 @@ export class Badminton implements IBadminton {
   }
 
   async processMessage(message: string): Promise<boolean> {
-    this.databaseService.getUserBalance(123);
     let messageParsed: any;
 
     try {
@@ -34,14 +32,18 @@ export class Badminton implements IBadminton {
     }
 
     if (messageParsed['callback_query']) {
-      return await this.processCallbackMessage(messageParsed as ICallbackMessageBody);
+      const result = await this.processCallbackMessage(messageParsed as ICallbackMessageBody);
+      await this.databaseService.closeConnection();
+      return result;
     }
 
-    return await this.processInviteMessage(messageParsed as IMessageBody);
+    const result = await this.processInviteMessage(messageParsed as IMessageBody);
+    await this.databaseService.closeConnection();
+    return result;
   }
 
   private async processInviteMessage(messageParsed: IMessageBody): Promise<boolean> {
-    const { channelId } = this.configurationService.getConfiguration();
+    const { groupIds } = this.configurationService.getConfiguration();
 
     const {
       message: {
@@ -51,22 +53,30 @@ export class Badminton implements IBadminton {
       },
     } = messageParsed;
 
-    if (chatId !== channelId) {
+    if (!messageTextDirty) {
       return false;
     }
+
+    if (!groupIds.includes(chatId)) {
+      return false;
+    }
+
+    const user = new User();
+    user.id = userId;
+    user.username = username;
+    user.firstName = firstName;
+    user.lastName = lastName;
+    await this.databaseService.upsertUser(user);
 
     const messageText = messageTextDirty.trim().toLowerCase();
 
-    if (messageText === 'cancel') {
-      // TODO: cancel invite
-    }
-
-    const playRegExp = new RegExp(/.*[0-9].*?.*/, 'gm');
-    if (!playRegExp.test(messageText)) {
+    const playRegExp = new RegExp('[0-9].*[?]', 'gm');
+    if (messageText !== 'game' && !playRegExp.test(messageText)) {
       return false;
     }
 
-    return await this.createGame({ userId, chatId, username, firstName, lastName });
+    const result = await this.createGame({ userId, chatId, username, firstName, lastName });
+    return result;
   }
 
   private async createGame({
@@ -82,27 +92,24 @@ export class Badminton implements IBadminton {
     firstName: string;
     lastName: string;
   }): Promise<boolean> {
-    await this.databaseService.createGame({
-      userId,
-      price: 6,
-      username,
-      firstName,
-      lastName,
+    const user = new User();
+    user.id = userId;
+    user.username = username;
+    user.firstName = firstName;
+    user.lastName = lastName;
+
+    const game = await this.databaseService.createGame(this.configurationService.getConfiguration().gameCost, user);
+
+    const text = await this.messageService.getGameInvitation({
+      gameId: game.id,
+      createdByUsername: game.createdBy.username,
+      playUsers: game.playUsers,
+      payByUsername: game.payBy ? game.payBy.username : '',
+      isFree: game.isFree,
+      gameBalances: [{ username, gameBalance: 0 }],
     });
-    return false;
 
-    const text = `${username} invites to play today!\n\nplay: ${username}\n\nskip: \n\npay: ${username}`;
-
-    const replyMarkup = {
-      inline_keyboard: [
-        [
-          { text: 'play', callback_data: 'play' },
-          { text: 'skip', callback_data: 'skip' },
-          { text: 'pay', callback_data: 'pay' },
-          { text: 'free', callback_data: 'free' },
-        ],
-      ],
-    };
+    const replyMarkup = await this.messageService.getReplyMarkup();
 
     try {
       await this.telegramService.sendMessage({ replyMarkup: JSON.stringify(replyMarkup), text, chatId });
@@ -124,99 +131,143 @@ export class Badminton implements IBadminton {
           chat: { id: chatId },
           reply_markup: replyMarkup,
         },
-        from: { username },
+        from: { username, id: userId, first_name: firstName, last_name: lastName },
       },
     } = messageParsed;
 
-    const textArray = text.split('\n\n');
-    let playUsers = textArray[1]
-      .replace('play: ', '')
-      .split(', ')
-      .filter(v => v);
-    let skipUsers = textArray[2]
-      .replace('skip: ', '')
-      .split(', ')
-      .filter(v => v);
-    let payUser = textArray[3].replace('pay: ', '').replace('pay:', '');
+    const user = new User();
+    user.id = userId;
+    user.username = username;
+    user.firstName = firstName;
+    user.lastName = lastName;
+    await this.databaseService.upsertUser(user);
+    user.balance = await this.databaseService.getUserBalance(userId);
+
+    const gameId = await this.messageService.parseGameId(text);
+    const game = await this.databaseService.getGame(gameId);
+
+    if (game.isDone) {
+      return false;
+    }
 
     switch (data) {
       case 'play':
-        if (playUsers.includes(username)) {
-          playUsers = playUsers.filter(playUser => playUser !== username);
+        if (game.playUsers.some(u => u.id === userId)) {
+          await this.databaseService.removePlayUser(gameId, userId);
 
-          if (payUser === username) {
-            payUser = '';
+          game.playUsers = game.playUsers.filter(u => u.id !== userId);
+
+          if (game.payBy && game.payBy.id === userId) {
+            await this.databaseService.updatePayBy(gameId, null);
+
+            game.payBy = null;
           }
         } else {
-          playUsers.push(username);
+          await this.databaseService.addPlayUser(gameId, userId);
 
-          skipUsers = skipUsers.filter(skipUser => skipUser !== username);
-        }
-        break;
-
-      case 'skip':
-        if (skipUsers.includes(username)) {
-          skipUsers = skipUsers.filter(skipUser => skipUser !== username);
-        } else {
-          skipUsers.push(username);
-
-          playUsers = playUsers.filter(playUser => playUser !== username);
-
-          if (payUser === username) {
-            payUser = '';
-          }
+          game.playUsers.push(user);
         }
         break;
 
       case 'pay':
-        if (payUser === username) {
-          payUser = '';
-        } else {
-          payUser = username;
+        if (!game.isFree) {
+          if (game.payBy && game.payBy.id === userId) {
+            await this.databaseService.updatePayBy(gameId, null);
 
-          if (!playUsers.includes(username)) {
-            playUsers.push(username);
+            game.payBy = null;
+          } else {
+            await this.databaseService.updatePayBy(gameId, userId);
+
+            game.payBy = user;
+
+            if (!game.playUsers.some(u => u.id === userId)) {
+              await this.databaseService.addPlayUser(gameId, userId);
+
+              game.playUsers.push(user);
+            }
           }
+          break;
+        }
+
+      case 'free':
+        if (game.isFree) {
+          await this.databaseService.notFreeGame(gameId);
+
+          game.isFree = false;
+        } else {
+          await this.databaseService.freeGame(gameId);
+          await this.databaseService.updatePayBy(gameId, null);
+
+          game.isFree = true;
+          game.payBy = null;
         }
         break;
 
-      case 'free':
-        payUser = 'free';
+      case 'done':
+        await this.databaseService.doneGame(gameId);
+
+        game.isDone = true;
         break;
+
+      case 'delete':
+        if (game.createdBy.id !== user.id) {
+          return false;
+        }
+
+        await this.databaseService.removeGame(gameId);
+        await this.telegramService.deleteMessage({ chatId, messageId });
+
+        return false;
 
       default:
         return false;
     }
 
-    const newText = `${textArray[0]}\n\nplay: ${playUsers.join(', ')}\n\nskip: ${skipUsers.join(', ')}\n\npay: ${payUser}`;
+    const playersNumber = game.playUsers.length;
+    const gameCost = game.price / playersNumber;
 
-    const playersNumber = playUsers.length;
-    const gameCost = GAME_COST / playersNumber;
-    let balances = '\n\nBalances:';
+    const gameBalances = game.isFree
+      ? []
+      : game.playUsers.map(u => {
+          let userGameBalance = 0;
 
-    for (let i = 0; i < playUsers.length; i++) {
-      const userBalance = await this.databaseService.getUserBalance(playUsers[i]);
-      let userPay = 0;
+          if (game.payBy && game.payBy.username === u.username) {
+            userGameBalance += game.price;
+          }
 
-      if (payUser) {
-        if (payUser === playUsers[i]) {
-          userPay += GAME_COST;
-        }
+          userGameBalance -= gameCost;
 
-        userPay -= gameCost;
+          return {
+            id: u.id,
+            username: u.username,
+            gameBalance: userGameBalance,
+          };
+        });
+
+    if (game.isDone && !game.isFree) {
+      for (let i = 0; i < game.playUsers.length; i++) {
+        await this.databaseService.setUserBalance(
+          game.playUsers[i].id,
+          Number(game.playUsers[i].balance) + gameBalances[i].gameBalance,
+        );
       }
-
-      await this.databaseService.setUserBalance(playUsers[i], userBalance + userPay);
-
-      balances += `\n${playUsers[i]}: ${userBalance + userPay} (${userPay})`;
     }
+
+    const newText = await this.messageService.getGameInvitation({
+      gameId: game.id,
+      createdByUsername: game.createdBy.username,
+      playUsers: game.playUsers,
+      payByUsername: game.payBy ? game.payBy.username : '',
+      isFree: game.isFree,
+      gameBalances,
+    });
 
     try {
       await this.telegramService.editMessageText({
-        text: `${newText}${balances}`,
+        text: `${newText}`,
         chatId,
         messageId,
-        replyMarkup: JSON.stringify(replyMarkup),
+        replyMarkup: game.isDone ? '' : JSON.stringify(replyMarkup),
       });
     } catch (error) {
       console.error('Error sending telegram message: ', error.message);

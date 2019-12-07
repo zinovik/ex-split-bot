@@ -1,5 +1,13 @@
 export interface ITelegramService {
-  sendMessage({ text, replyMarkup, chatId }: { text: string; replyMarkup: string; chatId: string | number }): Promise<void>;
+  sendMessage({
+    text,
+    replyMarkup,
+    chatId,
+  }: {
+    text: string;
+    replyMarkup: string;
+    chatId: string | number;
+  }): Promise<void>;
 
   editMessageText({
     chatId,
@@ -12,4 +20,6 @@ export interface ITelegramService {
     text: string;
     replyMarkup: string;
   }): Promise<void>;
+
+  deleteMessage({ chatId, messageId }: { chatId: string | number; messageId: string }): Promise<void>;
 }

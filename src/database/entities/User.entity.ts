@@ -1,9 +1,8 @@
-import { Entity, Unique, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable, OneToMany } from 'typeorm';
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToMany, OneToMany } from 'typeorm';
 
 import { Game } from './Game.entity';
 
 @Entity('user')
-@Unique(['id'])
 export class User {
   @PrimaryColumn('integer')
   public id: number;
@@ -17,24 +16,20 @@ export class User {
   @Column('text')
   public username: string;
 
-  @Column('decimal', { nullable: true })
-  public balance?: number;
+  @Column('decimal')
+  public balance: number;
 
   @ManyToMany(
     type => Game,
     game => game.playUsers,
+    { nullable: true },
   )
   public playGames: Game[];
 
-  @ManyToMany(
+  @OneToMany(
     type => Game,
-    game => game.skipUsers,
-  )
-  public skipGames: Game[];
-
-  @ManyToMany(
-    type => Game,
-    game => game.payUsers,
+    game => game.payBy,
+    { nullable: true },
   )
   public payGames: Game[];
 
@@ -47,6 +42,7 @@ export class User {
   @OneToMany(
     type => Game,
     game => game.createdBy,
+    { nullable: true },
   )
   public createdGames: Game[];
 }
