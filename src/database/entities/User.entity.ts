@@ -1,9 +1,18 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToMany, OneToMany } from 'typeorm';
+import {
+  Entity,
+  DefaultNamingStrategy,
+  PrimaryColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToMany,
+  OneToMany,
+} from 'typeorm';
 
 import { Game } from './Game.entity';
 
 @Entity('user')
-export class User {
+export class User extends DefaultNamingStrategy {
   @PrimaryColumn('integer')
   public id: number;
 
@@ -13,8 +22,8 @@ export class User {
   @Column('text', { name: 'last_name', nullable: true })
   public lastName?: string;
 
-  @Column('text')
-  public username: string;
+  @Column('text', { nullable: true })
+  public username?: string;
 
   @Column('decimal')
   public balance: number;

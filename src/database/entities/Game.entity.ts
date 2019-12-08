@@ -1,9 +1,20 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  DefaultNamingStrategy,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToMany,
+  JoinTable,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 
 import { User } from './User.entity';
 
 @Entity('game')
-export class Game {
+export class Game extends DefaultNamingStrategy {
   @PrimaryGeneratedColumn()
   public id: number;
 

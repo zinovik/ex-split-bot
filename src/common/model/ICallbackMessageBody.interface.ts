@@ -2,6 +2,7 @@ import { IReplyMarkup } from './IReplyMarkup.interface';
 
 export interface ICallbackMessageBody {
   callback_query: {
+    id: string;
     data: string;
     from: {
       id: number;

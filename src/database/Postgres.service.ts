@@ -15,6 +15,8 @@ export class PostgresService implements IDatabaseService {
   async upsertUser(user: User): Promise<void> {
     await this.createConnection();
 
+    const balance = 0;
+
     await this.connection.query(
       `
       INSERT INTO "user" ("id", "balance", "username", "first_name", "last_name")
@@ -23,7 +25,7 @@ export class PostgresService implements IDatabaseService {
       SET "username" = $3, "first_name" = $4, "last_name" = $5
       WHERE "user"."id" = $1
     `,
-      [user.id, 0, user.username, user.firstName, user.lastName],
+      [user.id, balance, user.username, user.firstName, user.lastName],
     );
   }
 
@@ -81,9 +83,9 @@ export class PostgresService implements IDatabaseService {
     const game = new Game();
     game.id = gameId;
     game.isFree = false;
-    game.createdBy = userWithBalance;
-    game.playUsers = [userWithBalance];
-    game.payBy = userWithBalance;
+    game.createdBy = userWithBalance as User;
+    game.playUsers = [userWithBalance as User];
+    game.payBy = userWithBalance as User;
 
     return game;
   }
@@ -120,7 +122,7 @@ export class PostgresService implements IDatabaseService {
 
     const users = await this.connection.query(
       `
-      SELECT *
+      SELECT "id", "balance", "username", "first_name" as "firstName", "last_name" as "lastName"
       FROM "user"
     `,
     );
@@ -212,19 +214,11 @@ export class PostgresService implements IDatabaseService {
     );
   }
 
-  async removeGame(gameId: number): Promise<void> {
-    await this.createConnection();
-
-    await this.connection.query(
-      `
-      DELETE FROM "game"
-      WHERE "id" = $1
-    `,
-      [gameId],
-    );
-  }
-
   async closeConnection(): Promise<void> {
+    if (!this.connection) {
+      return;
+    }
+
     await this.connection.close();
   }
 

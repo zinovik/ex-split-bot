@@ -23,6 +23,7 @@ export class TelegramService implements ITelegramService {
       reply_markup: replyMarkup,
       chat_id: chatId,
       disable_notification: true,
+      parse_mode: 'Markdown',
     };
 
     console.log(`Sending telegram message: ${JSON.stringify(message)}...`);
@@ -30,6 +31,19 @@ export class TelegramService implements ITelegramService {
     const { data } = await axios.post(`${TELEGRAM_API_URL}${this.token}/sendMessage`, message);
 
     console.log(`Telegram message was successfully sent: ${JSON.stringify(data)}`);
+  }
+
+  async answerCallback({ callbackQueryId, text }: { callbackQueryId: string; text?: string }): Promise<void> {
+    const message = {
+      callback_query_id: callbackQueryId,
+      text,
+    };
+
+    console.log(`Sending telegram callback answer: ${JSON.stringify(message)}...`);
+
+    const { data } = await axios.post(`${TELEGRAM_API_URL}${this.token}/answerCallbackQuery`, message);
+
+    console.log(`Telegram callback answer was successfully sent: ${JSON.stringify(data)}`);
   }
 
   async editMessageText({
@@ -48,6 +62,7 @@ export class TelegramService implements ITelegramService {
       chat_id: chatId,
       message_id: messageId,
       reply_markup: replyMarkup,
+      parse_mode: 'Markdown',
     };
 
     console.log(`Editing telegram message: ${JSON.stringify(message)}...`);

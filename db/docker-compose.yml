@@ -1,7 +1,7 @@
 version: "3.4"
 
 services:
-  db:
+  database_postgresql:
     image: postgres:latest
     ports:
       - 9432:5432
@@ -9,13 +9,3 @@ services:
       - POSTGRES_DB=badminton-brest-bot
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=dbpass123
-
-  api:
-    build: .
-    volumes:
-      - .:/app
-      - /app/node_modules/
-    ports:
-      - 9000:9000
-    depends_on:
-      - db

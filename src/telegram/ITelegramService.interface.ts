@@ -9,6 +9,8 @@ export interface ITelegramService {
     chatId: string | number;
   }): Promise<void>;
 
+  answerCallback({ callbackQueryId, text }: { callbackQueryId: string; text?: string }): Promise<void>;
+
   editMessageText({
     chatId,
     messageId,

@@ -4,32 +4,36 @@ import { IReplyMarkup } from '../common/model/IReplyMarkup.interface';
 import { User } from '../database/entities/User.entity';
 
 export class MessageService implements IMessageService {
+  getUserMarkdown({ username, firstName, id }: { username?: string; firstName?: string; id: number }): string {
+    return `[${firstName || username || String(id)}](tg://user?id=${String(id)})`;
+  }
+
   async getGameInvitation({
     gameId,
-    createdByUsername,
+    createdByUserMarkdown,
     playUsers,
-    payByUsername,
+    payByUserMarkdown,
     isFree,
     gameBalances,
   }: {
     gameId: number;
-    createdByUsername: string;
+    createdByUserMarkdown: string;
     playUsers: User[];
-    payByUsername: string;
+    payByUserMarkdown: string;
     isFree: boolean;
-    gameBalances: { username: string; gameBalance: number }[];
+    gameBalances: { userMarkdown: string; gameBalance: number }[];
   }): Promise<string> {
     return (
       `Game #${gameId}\n\n` +
-      `@${createdByUsername} invites to play ${isFree ? 'for free ' : ''}today!\n\n` +
+      `${createdByUserMarkdown} invites to play ${isFree ? 'for FREE ' : ''}today!\n\n` +
       `Balances before game:` +
-      `${playUsers.map(u => `\n@${u.username}: ${u.balance}`)}` +
-      `\n\nplay: ${playUsers.map(u => `@${u.username}`).join(', ')}` +
+      `${playUsers.map(u => `\n${this.getUserMarkdown(u)}: ${u.balance} BYN`)}` +
+      `\n\nplay: ${playUsers.map(u => `${this.getUserMarkdown(u)}`).join(', ')}` +
       (isFree
         ? ''
-        : `\npay: ${payByUsername ? '@' : ''}${payByUsername}\n\n` +
+        : `\npay: ${payByUserMarkdown}\n\n` +
           `Game balances:` +
-          `${gameBalances.map(u => `\n@${u.username}: ${u.gameBalance}`)}`)
+          `${gameBalances.map(u => `\n${u.userMarkdown}: ${u.gameBalance} BYN`)}`)
     );
   }
 

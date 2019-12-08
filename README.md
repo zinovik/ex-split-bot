@@ -8,7 +8,18 @@
 
 2. start project
 
+```bash
+docker-compose up
+```
+
+or
+
+```bash
+cd db
+docker-compose up
+
 npm run start:lambda
+```
 
 3. setup bot
 

@@ -2,13 +2,15 @@ import { IReplyMarkup } from '../common/model/IReplyMarkup.interface';
 import { User } from './../database/entities/User.entity';
 
 export interface IMessageService {
+  getUserMarkdown({ username, firstName, id }: { username?: string; firstName?: string; id: number }): string;
+
   getGameInvitation(parameters: {
     gameId: number;
-    createdByUsername: string;
+    createdByUserMarkdown: string;
     playUsers: User[];
-    payByUsername: string;
+    payByUserMarkdown: string;
     isFree: boolean;
-    gameBalances: { username: string; gameBalance: number }[];
+    gameBalances: { userMarkdown: string; gameBalance: number }[];
   }): Promise<string>;
 
   parseGameId(text: string): Promise<number>;

@@ -22,6 +22,8 @@ export class Badminton implements IBadminton {
   }
 
   async processMessage(message: string): Promise<boolean> {
+    console.log(`New message: ${message}`);
+
     let messageParsed: any;
 
     try {
@@ -45,6 +47,10 @@ export class Badminton implements IBadminton {
   private async processInviteMessage(messageParsed: IMessageBody): Promise<boolean> {
     const { groupIds } = this.configurationService.getConfiguration();
 
+    if (!messageParsed.message) {
+      return false;
+    }
+
     const {
       message: {
         text: messageTextDirty,
@@ -61,19 +67,19 @@ export class Badminton implements IBadminton {
       return false;
     }
 
-    const user = new User();
-    user.id = userId;
-    user.username = username;
-    user.firstName = firstName;
-    user.lastName = lastName;
-    await this.databaseService.upsertUser(user);
-
     const messageText = messageTextDirty.trim().toLowerCase();
 
     const playRegExp = new RegExp('[0-9].*[?]', 'gm');
     if (messageText !== 'game' && !playRegExp.test(messageText)) {
       return false;
     }
+
+    const user = new User();
+    user.id = userId;
+    user.username = username;
+    user.firstName = firstName;
+    user.lastName = lastName;
+    await this.databaseService.upsertUser(user);
 
     const result = await this.createGame({ userId, chatId, username, firstName, lastName });
     return result;
@@ -102,11 +108,11 @@ export class Badminton implements IBadminton {
 
     const text = await this.messageService.getGameInvitation({
       gameId: game.id,
-      createdByUsername: game.createdBy.username,
+      createdByUserMarkdown: this.messageService.getUserMarkdown(game.createdBy),
       playUsers: game.playUsers,
-      payByUsername: game.payBy ? game.payBy.username : '',
+      payByUserMarkdown: game.payBy ? this.messageService.getUserMarkdown(game.createdBy) : '',
       isFree: game.isFree,
-      gameBalances: [{ username, gameBalance: 0 }],
+      gameBalances: [{ userMarkdown: this.messageService.getUserMarkdown(user), gameBalance: 0 }],
     });
 
     const replyMarkup = await this.messageService.getReplyMarkup();
@@ -124,6 +130,7 @@ export class Badminton implements IBadminton {
   private async processCallbackMessage(messageParsed: ICallbackMessageBody): Promise<boolean> {
     const {
       callback_query: {
+        id: callbackQueryId,
         data,
         message: {
           text,
@@ -146,6 +153,8 @@ export class Badminton implements IBadminton {
     const gameId = await this.messageService.parseGameId(text);
     const game = await this.databaseService.getGame(gameId);
 
+    console.log(`Current game: ${JSON.stringify(game)}`);
+
     if (game.isDone) {
       return false;
     }
@@ -154,68 +163,73 @@ export class Badminton implements IBadminton {
       case 'play':
         if (game.playUsers.some(u => u.id === userId)) {
           await this.databaseService.removePlayUser(gameId, userId);
-
           game.playUsers = game.playUsers.filter(u => u.id !== userId);
 
           if (game.payBy && game.payBy.id === userId) {
             await this.databaseService.updatePayBy(gameId, null);
-
             game.payBy = null;
           }
-        } else {
-          await this.databaseService.addPlayUser(gameId, userId);
 
-          game.playUsers.push(user);
+          break;
         }
+
+        await this.databaseService.addPlayUser(gameId, userId);
+        game.playUsers.push(user);
+
         break;
 
       case 'pay':
-        if (!game.isFree) {
-          if (game.payBy && game.payBy.id === userId) {
-            await this.databaseService.updatePayBy(gameId, null);
+        if (game.isFree) {
+          await this.telegramService.answerCallback({ callbackQueryId, text: 'You can not pay in free game!' });
+          return false;
+        }
 
-            game.payBy = null;
-          } else {
-            await this.databaseService.updatePayBy(gameId, userId);
+        if (game.payBy && game.payBy.id === userId) {
+          await this.databaseService.updatePayBy(gameId, null);
+          game.payBy = null;
 
-            game.payBy = user;
-
-            if (!game.playUsers.some(u => u.id === userId)) {
-              await this.databaseService.addPlayUser(gameId, userId);
-
-              game.playUsers.push(user);
-            }
-          }
           break;
         }
+
+        await this.databaseService.updatePayBy(gameId, userId);
+        game.payBy = user;
+
+        if (!game.playUsers.some(u => u.id === userId)) {
+          await this.databaseService.addPlayUser(gameId, userId);
+          game.playUsers.push(user);
+        }
+
+        break;
 
       case 'free':
         if (game.isFree) {
           await this.databaseService.notFreeGame(gameId);
-
           game.isFree = false;
-        } else {
-          await this.databaseService.freeGame(gameId);
-          await this.databaseService.updatePayBy(gameId, null);
 
-          game.isFree = true;
-          game.payBy = null;
+          break;
         }
+
+        await this.databaseService.freeGame(gameId);
+        await this.databaseService.updatePayBy(gameId, null);
+        game.isFree = true;
+        game.payBy = null;
+
         break;
 
       case 'done':
         await this.databaseService.doneGame(gameId);
-
         game.isDone = true;
+
         break;
 
       case 'delete':
         if (game.createdBy.id !== user.id) {
+          await this.telegramService.answerCallback({ callbackQueryId, text: 'You can delete only your own games!' });
           return false;
         }
 
-        await this.databaseService.removeGame(gameId);
         await this.telegramService.deleteMessage({ chatId, messageId });
+        await this.telegramService.answerCallback({ callbackQueryId, text: 'Game was successfully deleted!' });
 
         return false;
 
@@ -223,26 +237,7 @@ export class Badminton implements IBadminton {
         return false;
     }
 
-    const playersNumber = game.playUsers.length;
-    const gameCost = game.price / playersNumber;
-
-    const gameBalances = game.isFree
-      ? []
-      : game.playUsers.map(u => {
-          let userGameBalance = 0;
-
-          if (game.payBy && game.payBy.username === u.username) {
-            userGameBalance += game.price;
-          }
-
-          userGameBalance -= gameCost;
-
-          return {
-            id: u.id,
-            username: u.username,
-            gameBalance: userGameBalance,
-          };
-        });
+    const gameBalances = this.getGameBalances(game);
 
     if (game.isDone && !game.isFree) {
       for (let i = 0; i < game.playUsers.length; i++) {
@@ -255,9 +250,9 @@ export class Badminton implements IBadminton {
 
     const newText = await this.messageService.getGameInvitation({
       gameId: game.id,
-      createdByUsername: game.createdBy.username,
+      createdByUserMarkdown: this.messageService.getUserMarkdown(game.createdBy),
       playUsers: game.playUsers,
-      payByUsername: game.payBy ? game.payBy.username : '',
+      payByUserMarkdown: game.payBy ? this.messageService.getUserMarkdown(game.payBy) : '',
       isFree: game.isFree,
       gameBalances,
     });
@@ -269,11 +264,49 @@ export class Badminton implements IBadminton {
         messageId,
         replyMarkup: game.isDone ? '' : JSON.stringify(replyMarkup),
       });
+
+      await this.telegramService.answerCallback({ callbackQueryId, text: 'Game was successfully updated!' });
     } catch (error) {
       console.error('Error sending telegram message: ', error.message);
       return false;
     }
 
     return true;
+  }
+
+  private getGameBalances({
+    isFree,
+    playUsers,
+    price,
+    payBy,
+  }: {
+    isFree: boolean;
+    playUsers: { username?: string; firstName?: string; id: number }[];
+    price: number;
+    payBy?: { id: number } | null;
+  }): { id: number; userMarkdown: string; gameBalance: number }[] {
+    const gameCost = price / playUsers.length;
+
+    if (isFree || !payBy) {
+      return [];
+    }
+
+    const gameBalances = playUsers.map(u => {
+      let userGameBalance = 0;
+
+      if (payBy && payBy.id === u.id) {
+        userGameBalance += price;
+      }
+
+      userGameBalance -= gameCost;
+
+      return {
+        id: u.id,
+        userMarkdown: this.messageService.getUserMarkdown(u),
+        gameBalance: userGameBalance,
+      };
+    });
+
+    return gameBalances;
   }
 }
