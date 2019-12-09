@@ -1,3 +1,5 @@
+import 'babel-polyfill';
+
 import { MessageService } from '../../../src/message/Message.service';
 
 describe('Message', () => {

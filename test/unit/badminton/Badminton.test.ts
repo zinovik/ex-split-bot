@@ -1,3 +1,5 @@
+import 'babel-polyfill';
+
 import { IMock, Mock, Times } from 'typemoq';
 
 import { Badminton } from '../../../src/badminton/Badminton';
