@@ -8,7 +8,7 @@ export class MessageService implements IMessageService {
     return `[${firstName || username || String(id)}](tg://user?id=${String(id)})`;
   }
 
-  async getGameInvitation({
+  getGameMessageText({
     gameId,
     createdByUserMarkdown,
     playUsers,
@@ -22,26 +22,48 @@ export class MessageService implements IMessageService {
     payByUserMarkdown: string;
     isFree: boolean;
     gameBalances: { userMarkdown: string; gameBalance: number }[];
-  }): Promise<string> {
+  }): string {
     return (
-      `Game #${gameId}\n\n` +
-      `${createdByUserMarkdown} invites to play ${isFree ? 'for FREE ' : ''}today!\n\n` +
-      `Balances before game:` +
-      `${playUsers.map(u => `\n${this.getUserMarkdown(u)}: ${u.balance} BYN`)}` +
-      `\n\nplay: ${playUsers.map(u => `${this.getUserMarkdown(u)}`).join(', ')}` +
-      (isFree
-        ? ''
-        : `\npay: ${payByUserMarkdown}\n\n` +
-          `Game balances:` +
-          `${gameBalances.map(u => `\n${u.userMarkdown}: ${u.gameBalance} BYN`)}`)
+      `${this.getGameNumber(gameId)}\n` +
+      `\n` +
+      `${this.getGameCreated(createdByUserMarkdown, isFree)}\n` +
+      `\n` +
+      `${this.getBalancesBeforeGame(playUsers)}\n` +
+      `\n` +
+      `${this.getPlayUsers(playUsers)}` +
+      (isFree ? '' : `\n` + `${this.getPayUser(payByUserMarkdown)}\n` + `\n` + this.getGameBalances(gameBalances))
     );
   }
 
-  async parseGameId(text: string): Promise<number> {
+  private getGameNumber(gameId: number): string {
+    return `Game #${gameId}`;
+  }
+
+  private getGameCreated(createdByUserMarkdown: string, isFree: boolean): string {
+    return `${createdByUserMarkdown} invites to play ${isFree ? 'for FREE ' : ''}today!`;
+  }
+
+  private getBalancesBeforeGame(playUsers: User[]): string {
+    return `Balances before game:` + `${playUsers.map(u => `\n${this.getUserMarkdown(u)}: ${u.balance} BYN`)}`;
+  }
+
+  private getPlayUsers(playUsers: User[]): string {
+    return `play: ${playUsers.map(u => `${this.getUserMarkdown(u)}`).join(', ')}`;
+  }
+
+  private getPayUser(payByUserMarkdown: string): string {
+    return `pay: ${payByUserMarkdown}`;
+  }
+
+  private getGameBalances(gameBalances: { userMarkdown: string; gameBalance: number }[]): string {
+    return `Game balances:` + `${gameBalances.map(u => `\n${u.userMarkdown}: ${u.gameBalance} BYN`)}`;
+  }
+
+  parseGameId(text: string): number {
     return Number(text.split('\n')[0].replace('Game #', ''));
   }
 
-  async getReplyMarkup(): Promise<IReplyMarkup> {
+  getReplyMarkup(): IReplyMarkup {
     return {
       inline_keyboard: [
         [

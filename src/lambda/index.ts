@@ -13,8 +13,8 @@ import { IEvent } from './model/IEvent.interface';
 dotenv.config();
 
 exports.handler = async ({ body, queryStringParameters: { token } }: IEvent, context: never) => {
-  if (process.env.GROUP_IDS === undefined) {
-    throw new ConfigParameterNotDefinedError('GROUP_IDS');
+  if (process.env.CHAT_USERNAME === undefined) {
+    throw new ConfigParameterNotDefinedError('CHAT_USERNAME');
   }
   if (process.env.TELEGRAM_TOKEN === undefined) {
     throw new ConfigParameterNotDefinedError('TELEGRAM_TOKEN');
@@ -40,10 +40,7 @@ exports.handler = async ({ body, queryStringParameters: { token } }: IEvent, con
   }
 
   const badminton = new Badminton(
-    new ConfigurationService(
-      process.env.GROUP_IDS.split(',').map(groupId => Number(groupId)),
-      Number(process.env.GAME_COST),
-    ),
+    new ConfigurationService(process.env.CHAT_USERNAME, Number(process.env.GAME_COST)),
     new PostgresService(process.env.DATABASE_URL),
     new TelegramService(process.env.TELEGRAM_TOKEN),
     new MessageService(),

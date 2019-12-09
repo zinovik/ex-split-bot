@@ -13,6 +13,7 @@ export interface IMessageBody {
     chat: {
       id: number;
       title: string;
+      username: string;
       type: string;
     };
     date: number;

@@ -4,16 +4,16 @@ import { User } from './../database/entities/User.entity';
 export interface IMessageService {
   getUserMarkdown({ username, firstName, id }: { username?: string; firstName?: string; id: number }): string;
 
-  getGameInvitation(parameters: {
+  getGameMessageText(parameters: {
     gameId: number;
     createdByUserMarkdown: string;
     playUsers: User[];
     payByUserMarkdown: string;
     isFree: boolean;
     gameBalances: { userMarkdown: string; gameBalance: number }[];
-  }): Promise<string>;
+  }): string;
 
-  parseGameId(text: string): Promise<number>;
+  parseGameId(text: string): number;
 
-  getReplyMarkup(): Promise<IReplyMarkup>;
+  getReplyMarkup(): IReplyMarkup;
 }
