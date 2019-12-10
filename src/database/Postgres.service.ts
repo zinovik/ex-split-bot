@@ -95,7 +95,7 @@ export class PostgresService implements IDatabaseService {
 
     const [game] = await this.connection.query(
       `
-      SELECT "id", "price", "is_free" as "isFree"
+      SELECT "id", "price", "is_free" as "isFree", "is_done" as "isDone"
       FROM "game"
       WHERE "game"."id" = $1
     `,
