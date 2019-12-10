@@ -13,6 +13,8 @@ import { IEvent } from './model/IEvent.interface';
 dotenv.config();
 
 exports.handler = async ({ body, queryStringParameters: { token } }: IEvent, context: never) => {
+  console.log(`New request with token: ${token}`);
+
   if (process.env.CHAT_USERNAME === undefined) {
     throw new ConfigParameterNotDefinedError('CHAT_USERNAME');
   }
