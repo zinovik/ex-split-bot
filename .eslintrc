@@ -20,7 +20,8 @@
     ],
     "@typescript-eslint/camelcase": 1,
     "@typescript-eslint/no-use-before-define": 1,
-    "no-control-regex": 1
+    "no-control-regex": 1,
+    "no-case-declarations": 1
   },
   "globals": {
     "describe": "readonly",
