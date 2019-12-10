@@ -46,6 +46,7 @@ describe('Scheduler', () => {
     // Arrange
     const chatUsername = 'test-chat-username';
     const gameCost = 9;
+    const adminIds = [111];
     const gameId = 11;
     const initialUser = {
       id: 987,
@@ -83,7 +84,7 @@ describe('Scheduler', () => {
     user.lastName = initialUser.lastName;
     user.username = initialUser.username;
     const gameMessageText = 'test-telegram-message-text';
-    configurationServiceMockgGetConfiguration({ chatUsername, gameCost });
+    configurationServiceMockgGetConfiguration({ chatUsername, gameCost, adminIds });
     databaseServiceMockUpsertUser(user);
     databaseServiceMockCreateGame(gameCost, user, gameId);
     messageServiceMockGetUserMarkDown(user, userMarkdown);
@@ -116,13 +117,15 @@ describe('Scheduler', () => {
   function configurationServiceMockgGetConfiguration({
     chatUsername,
     gameCost,
+    adminIds,
   }: {
     chatUsername: string;
     gameCost: number;
+    adminIds: number[];
   }): void {
     configurationServiceMock
       .setup((x: IConfigurationService) => x.getConfiguration())
-      .returns(() => ({ chatUsername, gameCost }))
+      .returns(() => ({ chatUsername, gameCost, adminIds }))
       .verifiable(Times.exactly(2));
   }
 
