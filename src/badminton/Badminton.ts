@@ -161,7 +161,7 @@ export class Badminton implements IBadminton {
 
     console.log(`Current game: ${JSON.stringify(game)}`);
 
-    if (game.isDone && !adminIds.includes(userId)) {
+    if (game.isDone && data !== 'edit') {
       return false;
     }
 
