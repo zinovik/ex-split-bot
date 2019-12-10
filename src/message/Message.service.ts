@@ -59,6 +59,20 @@ export class MessageService implements IMessageService {
     return `Game balances:` + `${gameBalances.map(u => `\n${u.userMarkdown}: ${u.gameBalance} BYN`)}`;
   }
 
+  getDeletedGameMessageText({
+    gameId,
+    createdByUserMarkdown,
+  }: {
+    gameId: number;
+    createdByUserMarkdown: string;
+  }): string {
+    return (
+      `${this.getGameNumber(gameId)}\n` +
+      `${this.getGameCreated(createdByUserMarkdown, false)}\n` +
+      `Game was deleted :(`
+    );
+  }
+
   parseGameId(text: string): number {
     return Number(text.split('\n')[0].replace('Game #', ''));
   }
@@ -74,6 +88,18 @@ export class MessageService implements IMessageService {
           { text: 'delete', callback_data: 'delete' },
         ],
       ],
+    };
+  }
+
+  getDoneGameReplyMarkup(): IReplyMarkup {
+    return {
+      inline_keyboard: [[{ text: 'edit', callback_data: 'edit' }]],
+    };
+  }
+
+  getDeletedGameReplyMarkup(): IReplyMarkup {
+    return {
+      inline_keyboard: [[{ text: 'restore', callback_data: 'restore' }]],
     };
   }
 }

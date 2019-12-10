@@ -75,20 +75,4 @@ export class TelegramService implements ITelegramService {
 
     console.log(`Telegram message was successfully edited: ${JSON.stringify(data)}`);
   }
-
-  async deleteMessage({ chatId, messageId }: { chatId: string | number; messageId: string }): Promise<void> {
-    console.log(`Deleting telegram message...`);
-
-    const { data } = await axios.post(
-      `${TELEGRAM_API_URL}${this.token}/deleteMessage`,
-      { chat_id: chatId, message_id: messageId },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      },
-    );
-
-    console.log(`Telegram message was successfully deleted: ${JSON.stringify(data)}`);
-  }
 }

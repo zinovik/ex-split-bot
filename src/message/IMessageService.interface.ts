@@ -13,7 +13,11 @@ export interface IMessageService {
     gameBalances: { userMarkdown: string; gameBalance: number }[];
   }): string;
 
+  getDeletedGameMessageText(parameters: { gameId: number; createdByUserMarkdown: string }): string;
+
   parseGameId(text: string): number;
 
   getReplyMarkup(): IReplyMarkup;
+  getDoneGameReplyMarkup(): IReplyMarkup;
+  getDeletedGameReplyMarkup(): IReplyMarkup;
 }

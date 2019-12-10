@@ -133,6 +133,8 @@ export class Badminton implements IBadminton {
   }
 
   private async processCallbackMessage(messageParsed: ICallbackMessageBody): Promise<boolean> {
+    const { adminIds } = this.configurationService.getConfiguration();
+
     const {
       callback_query: {
         id: callbackQueryId,
@@ -141,7 +143,6 @@ export class Badminton implements IBadminton {
           text,
           message_id: messageId,
           chat: { id: chatId },
-          reply_markup: replyMarkup,
         },
         from: { username, id: userId, first_name: firstName, last_name: lastName },
       },
@@ -156,11 +157,11 @@ export class Badminton implements IBadminton {
     user.balance = await this.databaseService.getUserBalance(userId);
 
     const gameId = this.messageService.parseGameId(text);
-    const game = await this.databaseService.getGame(gameId);
+    let game = await this.databaseService.getGame(gameId);
 
     console.log(`Current game: ${JSON.stringify(game)}`);
 
-    if (game.isDone) {
+    if (game.isDone && !adminIds.includes(userId)) {
       return false;
     }
 
@@ -222,21 +223,82 @@ export class Badminton implements IBadminton {
         break;
 
       case 'done':
+        if (!game.isFree && !game.payBy) {
+          await this.telegramService.answerCallback({
+            callbackQueryId,
+            text: 'You can not done game if it is not free and nobody payed!',
+          });
+          return false;
+        }
+
+        if (game.createdBy.id !== user.id && !adminIds.includes(userId)) {
+          await this.telegramService.answerCallback({ callbackQueryId, text: 'You can done only your own games!' });
+          return false;
+        }
+
         await this.databaseService.doneGame(gameId);
         game.isDone = true;
 
         break;
 
       case 'delete':
-        if (game.createdBy.id !== user.id) {
+        if (game.createdBy.id !== user.id && !adminIds.includes(userId)) {
           await this.telegramService.answerCallback({ callbackQueryId, text: 'You can delete only your own games!' });
           return false;
         }
 
-        await this.telegramService.deleteMessage({ chatId, messageId });
+        const newText = this.messageService.getDeletedGameMessageText({
+          gameId: game.id,
+          createdByUserMarkdown: this.messageService.getUserMarkdown(game.createdBy),
+        });
+
+        const replyMarkup = this.messageService.getDeletedGameReplyMarkup();
+
+        await this.telegramService.editMessageText({
+          text: `${newText}`,
+          chatId,
+          messageId,
+          replyMarkup: JSON.stringify(replyMarkup),
+        });
+
         await this.telegramService.answerCallback({ callbackQueryId, text: 'Game was successfully deleted!' });
 
         return false;
+
+      case 'edit':
+        if (!game.isDone) {
+          await this.telegramService.answerCallback({ callbackQueryId, text: 'You can edit only done game!' });
+          return false;
+        }
+
+        if (!adminIds.includes(userId)) {
+          await this.telegramService.answerCallback({ callbackQueryId, text: 'Only admin can do it!' });
+          return false;
+        }
+
+        const gameBalances = this.getGameBalances(game);
+
+        for (let i = 0; i < game.playUsers.length; i++) {
+          await this.databaseService.setUserBalance(
+            game.playUsers[i].id,
+            Number(game.playUsers[i].balance) - gameBalances[i].gameBalance,
+          );
+        }
+
+        await this.databaseService.doneGame(gameId);
+        game.isDone = false;
+
+        game = await this.databaseService.getGame(gameId);
+
+        break;
+
+      case 'restore':
+        if (!adminIds.includes(userId)) {
+          await this.telegramService.answerCallback({ callbackQueryId, text: 'Only admin can do it!' });
+          return false;
+        }
+
+        break;
 
       default:
         return false;
@@ -262,12 +324,16 @@ export class Badminton implements IBadminton {
       gameBalances,
     });
 
+    const replyMarkup = game.isDone
+      ? this.messageService.getDoneGameReplyMarkup()
+      : this.messageService.getReplyMarkup();
+
     try {
       await this.telegramService.editMessageText({
         text: `${newText}`,
         chatId,
         messageId,
-        replyMarkup: game.isDone ? '' : JSON.stringify(replyMarkup),
+        replyMarkup: JSON.stringify(replyMarkup),
       });
 
       await this.telegramService.answerCallback({ callbackQueryId, text: 'Game was successfully updated!' });
@@ -300,7 +366,7 @@ export class Badminton implements IBadminton {
     const gameBalances = playUsers.map(u => {
       let userGameBalance = 0;
 
-      if (payBy && payBy.id === u.id) {
+      if (payBy.id === u.id) {
         userGameBalance += price;
       }
 

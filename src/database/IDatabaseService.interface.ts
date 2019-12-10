@@ -20,6 +20,7 @@ export interface IDatabaseService {
   notFreeGame(gameId: number): Promise<void>;
 
   doneGame(gameId: number): Promise<void>;
+  undoneGame(gameId: number): Promise<void>;
 
   closeConnection(): Promise<void>;
 }

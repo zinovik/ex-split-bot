@@ -214,6 +214,17 @@ export class PostgresService implements IDatabaseService {
     );
   }
 
+  async undoneGame(gameId: number): Promise<void> {
+    await this.connection.query(
+      `
+      UPDATE "game"
+      SET "is_done" = $2
+      WHERE "game"."id" = $1
+    `,
+      [gameId, false],
+    );
+  }
+
   async closeConnection(): Promise<void> {
     if (!this.connection) {
       return;

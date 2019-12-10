@@ -22,6 +22,4 @@ export interface ITelegramService {
     text: string;
     replyMarkup: string;
   }): Promise<void>;
-
-  deleteMessage({ chatId, messageId }: { chatId: string | number; messageId: string }): Promise<void>;
 }
