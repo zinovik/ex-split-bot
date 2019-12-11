@@ -61,7 +61,7 @@ export class PostgresService implements IDatabaseService {
     );
   }
 
-  async createGame(price: number, user: User): Promise<Game> {
+  async createGame(price: number, userId: number): Promise<number> {
     await this.createConnection();
 
     const [{ id: gameId }] = await this.connection.query(
@@ -70,24 +70,12 @@ export class PostgresService implements IDatabaseService {
       VALUES ($1, $2, $2, $3, $3)
       RETURNING "id"
     `,
-      [price, false, user.id],
+      [price, false, userId],
     );
 
-    await this.addPlayUser(gameId, user.id);
+    await this.addPlayUser(gameId, userId);
 
-    const userWithBalance = {
-      ...user,
-      balance: await this.getUserBalance(user.id),
-    };
-
-    const game = new Game();
-    game.id = gameId;
-    game.isFree = false;
-    game.createdBy = userWithBalance as User;
-    game.playUsers = [userWithBalance as User];
-    game.payBy = userWithBalance as User;
-
-    return game;
+    return gameId;
   }
 
   async getGame(gameId: number): Promise<Game> {

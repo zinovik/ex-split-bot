@@ -81,26 +81,7 @@ export class Badminton implements IBadminton {
     }
 
     await this.upsertUser({ id: userId, username, firstName, lastName });
-    await this.createGame({ userId, messageChatUsername, username, firstName, lastName });
-  }
-
-  private async upsertUser({
-    id,
-    username,
-    firstName,
-    lastName,
-  }: {
-    id: number;
-    username?: string;
-    firstName?: string;
-    lastName?: string;
-  }): Promise<void> {
-    const user = new User();
-    user.id = id;
-    user.username = username;
-    user.firstName = firstName;
-    user.lastName = lastName;
-    await this.databaseService.upsertUser(user);
+    await this.createGame({ userId, messageChatUsername, username, firstName });
   }
 
   private async createGame({
@@ -108,29 +89,22 @@ export class Badminton implements IBadminton {
     messageChatUsername,
     username,
     firstName,
-    lastName,
   }: {
     userId: number;
     messageChatUsername: string;
     username?: string;
     firstName?: string;
-    lastName?: string;
   }): Promise<void> {
     const { gameCost } = this.configurationService.getConfiguration();
 
-    const user = new User();
-    user.id = userId;
-    user.username = username;
-    user.firstName = firstName;
-    user.lastName = lastName;
-
-    const game = await this.databaseService.createGame(gameCost, user);
+    const gameId = await this.databaseService.createGame(gameCost, userId);
     const userMarkdown = this.messageService.getUserMarkdown({ username, firstName, id: userId });
+    const userBalance = await this.databaseService.getUserBalance(userId);
 
     const text = this.messageService.getGameMessageText({
-      gameId: game.id,
+      gameId,
       createdByUserMarkdown: userMarkdown,
-      playUsers: game.playUsers,
+      playUsers: [{ username, firstName, id: userId, balance: userBalance }],
       payByUserMarkdown: userMarkdown,
       gameBalances: [{ userMarkdown, gameBalance: 0 }],
     });
@@ -248,7 +222,7 @@ export class Badminton implements IBadminton {
           return;
         }
 
-        if (game.createdBy.id !== user.id && !adminIds.includes(userId)) {
+        if (game.createdBy.id !== userId && !adminIds.includes(userId)) {
           await this.telegramService.answerCallback({ callbackQueryId, text: 'You can done only your own games!' });
           return;
         }
@@ -259,7 +233,7 @@ export class Badminton implements IBadminton {
         break;
 
       case 'delete':
-        if (game.createdBy.id !== user.id && !adminIds.includes(userId)) {
+        if (game.createdBy.id !== userId && !adminIds.includes(userId)) {
           await this.telegramService.answerCallback({ callbackQueryId, text: 'You can delete only your own games!' });
           return;
         }
@@ -358,6 +332,25 @@ export class Badminton implements IBadminton {
       console.error('Error sending telegram message: ', error.message);
       console.error('Error sending telegram message: ', error.response.data.description);
     }
+  }
+
+  private async upsertUser({
+    id,
+    username,
+    firstName,
+    lastName,
+  }: {
+    id: number;
+    username?: string;
+    firstName?: string;
+    lastName?: string;
+  }): Promise<void> {
+    const user = new User();
+    user.id = id;
+    user.username = username;
+    user.firstName = firstName;
+    user.lastName = lastName;
+    await this.databaseService.upsertUser(user);
   }
 
   private getGameBalances({

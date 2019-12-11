@@ -7,7 +7,7 @@ export interface IDatabaseService {
   getUserBalance(userId: number): Promise<number>;
   setUserBalance(userId: number, balance: number): Promise<void>;
 
-  createGame(price: number, user: User): Promise<Game>;
+  createGame(price: number, userId: number): Promise<number>;
 
   getGame(gameId: number): Promise<Game>;
 
