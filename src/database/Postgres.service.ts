@@ -83,25 +83,8 @@ export class PostgresService implements IDatabaseService {
 
     const [game] = await this.connection.query(
       `
-      SELECT "id", "price", "is_free" as "isFree", "is_done" as "isDone"
-      FROM "game"
-      WHERE "game"."id" = $1
-    `,
-      [gameId],
-    );
-
-    const [{ createdById }] = await this.connection.query(
-      `
-      SELECT "created_by" as "createdById"
-      FROM "game"
-      WHERE "game"."id" = $1
-    `,
-      [gameId],
-    );
-
-    const [{ payById }] = await this.connection.query(
-      `
-      SELECT "pay_by" as "payById"
+      SELECT "id", "price", "is_free" as "isFree", "is_done" as "isDone",
+             "created_by" as "createdById", "pay_by" as "payById"
       FROM "game"
       WHERE "game"."id" = $1
     `,
@@ -127,8 +110,8 @@ export class PostgresService implements IDatabaseService {
     return {
       ...game,
       playUsers: playUsers.map(({ userId }: { userId: number }) => users.find((u: User) => u.id === userId)),
-      createdBy: users.find((u: User) => u.id === createdById),
-      payBy: users.find((u: User) => u.id === payById),
+      createdBy: users.find((u: User) => u.id === game.createdById),
+      payBy: users.find((u: User) => u.id === game.payById),
     };
   }
 
