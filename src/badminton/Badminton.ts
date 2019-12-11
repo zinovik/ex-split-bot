@@ -24,7 +24,7 @@ export class Badminton implements IBadminton {
   async processMessage(notParsedMessage: string): Promise<void> {
     console.log(`New message: ${notParsedMessage}`);
 
-    let message: Object;
+    let message: IMessageBody | ICallbackMessageBody;
 
     try {
       message = JSON.parse(notParsedMessage);
@@ -42,8 +42,8 @@ export class Badminton implements IBadminton {
     await this.databaseService.closeConnection();
   }
 
-  private isCallbackMessage(message: Object): boolean {
-    return message.hasOwnProperty('callback_query');
+  private isCallbackMessage(message: IMessageBody | ICallbackMessageBody): boolean {
+    return 'callback_query' in message;
   }
 
   private async processGroupMessage(messageBody: IMessageBody): Promise<void> {
