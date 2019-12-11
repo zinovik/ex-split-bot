@@ -1,3 +1,3 @@
 export interface IBadminton {
-  processMessage(message: string): Promise<boolean>;
+  processMessage(notParsedMessage: string): Promise<void>;
 }

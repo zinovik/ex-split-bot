@@ -1,4 +1,4 @@
-import 'babel-polyfill';
+import 'core-js/stable';
 
 import { MessageService } from '../../../src/message/Message.service';
 

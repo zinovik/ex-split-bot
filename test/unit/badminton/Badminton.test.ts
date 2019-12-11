@@ -1,4 +1,4 @@
-import 'babel-polyfill';
+import 'core-js/stable';
 
 import { IMock, Mock, Times } from 'typemoq';
 
@@ -87,14 +87,16 @@ describe('Scheduler', () => {
     configurationServiceMockgGetConfiguration({ chatUsername, gameCost, adminIds });
     databaseServiceMockUpsertUser(user);
     databaseServiceMockCreateGame(gameCost, user, gameId);
-    messageServiceMockGetUserMarkDown(user, userMarkdown);
+    messageServiceMockGetUserMarkDown(
+      { username: initialUser.username, firstName: initialUser.firstName, id: initialUser.id },
+      userMarkdown,
+    );
     messageServiceMockGetGameMessageText(
       {
         gameId,
         createdByUserMarkdown: userMarkdown,
         playUsers: [user],
         payByUserMarkdown: userMarkdown,
-        isFree: false,
         gameBalances: [{ userMarkdown, gameBalance: 0 }],
       },
       gameMessageText,
@@ -143,20 +145,22 @@ describe('Scheduler', () => {
       .verifiable(Times.once());
   }
 
-  function messageServiceMockGetUserMarkDown(user: User, userMarkdown: string): void {
+  function messageServiceMockGetUserMarkDown(
+    user: { username: string; firstName: string; id: number },
+    userMarkdown: string,
+  ): void {
     messageServiceMock
       .setup((x: IMessageService) => x.getUserMarkdown(user))
       .returns(() => userMarkdown)
-      .verifiable(Times.exactly(3));
+      .verifiable(Times.once());
   }
 
   function messageServiceMockGetGameMessageText(
     parameters: {
       gameId: number;
       createdByUserMarkdown: string;
-      playUsers: User[];
+      playUsers: { username?: string; firstName?: string; id: number; balance: number }[];
       payByUserMarkdown: string;
-      isFree: boolean;
       gameBalances: { userMarkdown: string; gameBalance: number }[];
     },
     gameMessageText: string,

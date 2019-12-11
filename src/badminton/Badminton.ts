@@ -21,68 +21,86 @@ export class Badminton implements IBadminton {
     this.messageService = messageService;
   }
 
-  async processMessage(message: string): Promise<boolean> {
-    console.log(`New message: ${message}`);
+  async processMessage(notParsedMessage: string): Promise<void> {
+    console.log(`New message: ${notParsedMessage}`);
 
-    let messageParsed: any;
+    let message: Object;
 
     try {
-      messageParsed = JSON.parse(message);
+      message = JSON.parse(notParsedMessage);
     } catch (error) {
       console.error('Error parsing user message: ', error.message);
-      return false;
+      return;
     }
 
-    if (messageParsed['callback_query']) {
-      const result = await this.processCallbackMessage(messageParsed as ICallbackMessageBody);
-      await this.databaseService.closeConnection();
-      return result;
+    if (this.isCallbackMessage(message)) {
+      await this.processCallbackMessage(message as ICallbackMessageBody);
+    } else {
+      await this.processGroupMessage(message as IMessageBody);
     }
 
-    const result = await this.processInviteMessage(messageParsed as IMessageBody);
     await this.databaseService.closeConnection();
-    return result;
   }
 
-  private async processInviteMessage(messageParsed: IMessageBody): Promise<boolean> {
+  private isCallbackMessage(message: Object): boolean {
+    return message.hasOwnProperty('callback_query');
+  }
+
+  private async processGroupMessage(messageBody: IMessageBody): Promise<void> {
     const { chatUsername: allowedChatUsername } = this.configurationService.getConfiguration();
 
-    if (!messageParsed.message) {
-      return false;
+    if (!messageBody.message) {
+      console.error('No message body!');
+      return;
     }
 
     const {
       message: {
-        text: messageTextDirty,
+        text,
         chat: { username: messageChatUsername },
         from: { first_name: firstName, last_name: lastName, username, id: userId },
       },
-    } = messageParsed;
+    } = messageBody;
 
-    if (!messageTextDirty) {
-      return false;
+    if (!text) {
+      console.error('No text!');
+      return;
     }
 
     if (messageChatUsername !== allowedChatUsername) {
-      return false;
+      console.error('Wrong channel!');
+      return;
     }
 
-    const messageText = messageTextDirty.trim().toLowerCase();
+    const messageText = text.trim().toLowerCase();
 
-    const playRegExp = new RegExp('[0-9].*[?]', 'gm');
-    if (messageText !== 'game' && !playRegExp.test(messageText)) {
-      return false;
+    const playRegExp = new RegExp('^game$|[0-9].*[?]', 'gm');
+    if (!playRegExp.test(messageText)) {
+      console.error('No keyword found!');
+      return;
     }
 
+    await this.upsertUser({ id: userId, username, firstName, lastName });
+    await this.createGame({ userId, messageChatUsername, username, firstName, lastName });
+  }
+
+  private async upsertUser({
+    id,
+    username,
+    firstName,
+    lastName,
+  }: {
+    id: number;
+    username?: string;
+    firstName?: string;
+    lastName?: string;
+  }): Promise<void> {
     const user = new User();
-    user.id = userId;
+    user.id = id;
     user.username = username;
     user.firstName = firstName;
     user.lastName = lastName;
     await this.databaseService.upsertUser(user);
-
-    const result = await this.createGame({ userId, messageChatUsername, username, firstName, lastName });
-    return result;
   }
 
   private async createGame({
@@ -94,25 +112,27 @@ export class Badminton implements IBadminton {
   }: {
     userId: number;
     messageChatUsername: string;
-    username: string;
-    firstName: string;
-    lastName: string;
-  }): Promise<boolean> {
+    username?: string;
+    firstName?: string;
+    lastName?: string;
+  }): Promise<void> {
+    const { gameCost } = this.configurationService.getConfiguration();
+
     const user = new User();
     user.id = userId;
     user.username = username;
     user.firstName = firstName;
     user.lastName = lastName;
 
-    const game = await this.databaseService.createGame(this.configurationService.getConfiguration().gameCost, user);
+    const game = await this.databaseService.createGame(gameCost, user);
+    const userMarkdown = this.messageService.getUserMarkdown({ username, firstName, id: userId });
 
     const text = this.messageService.getGameMessageText({
       gameId: game.id,
-      createdByUserMarkdown: this.messageService.getUserMarkdown(game.createdBy),
+      createdByUserMarkdown: userMarkdown,
       playUsers: game.playUsers,
-      payByUserMarkdown: game.payBy ? this.messageService.getUserMarkdown(game.createdBy) : '',
-      isFree: game.isFree,
-      gameBalances: [{ userMarkdown: this.messageService.getUserMarkdown(user), gameBalance: 0 }],
+      payByUserMarkdown: userMarkdown,
+      gameBalances: [{ userMarkdown, gameBalance: 0 }],
     });
 
     const replyMarkup = this.messageService.getReplyMarkup();
@@ -126,13 +146,10 @@ export class Badminton implements IBadminton {
     } catch (error) {
       console.error('Error sending telegram message: ', error.message);
       console.error('Error sending telegram message: ', error.response.data.description);
-      return false;
     }
-
-    return true;
   }
 
-  private async processCallbackMessage(messageParsed: ICallbackMessageBody): Promise<boolean> {
+  private async processCallbackMessage(messageParsed: ICallbackMessageBody): Promise<void> {
     const { adminIds } = this.configurationService.getConfiguration();
 
     const {
@@ -162,7 +179,7 @@ export class Badminton implements IBadminton {
     console.log(`Current game: ${JSON.stringify(game)}`);
 
     if (game.isDone && data !== 'edit') {
-      return false;
+      return;
     }
 
     switch (data) {
@@ -187,7 +204,7 @@ export class Badminton implements IBadminton {
       case 'pay':
         if (game.isFree) {
           await this.telegramService.answerCallback({ callbackQueryId, text: 'You can not pay in free game!' });
-          return false;
+          return;
         }
 
         if (game.payBy && game.payBy.id === userId) {
@@ -228,12 +245,12 @@ export class Badminton implements IBadminton {
             callbackQueryId,
             text: 'You can not done game if it is not free and nobody payed!',
           });
-          return false;
+          return;
         }
 
         if (game.createdBy.id !== user.id && !adminIds.includes(userId)) {
           await this.telegramService.answerCallback({ callbackQueryId, text: 'You can done only your own games!' });
-          return false;
+          return;
         }
 
         await this.databaseService.doneGame(gameId);
@@ -244,7 +261,7 @@ export class Badminton implements IBadminton {
       case 'delete':
         if (game.createdBy.id !== user.id && !adminIds.includes(userId)) {
           await this.telegramService.answerCallback({ callbackQueryId, text: 'You can delete only your own games!' });
-          return false;
+          return;
         }
 
         const newText = this.messageService.getDeletedGameMessageText({
@@ -263,17 +280,17 @@ export class Badminton implements IBadminton {
 
         await this.telegramService.answerCallback({ callbackQueryId, text: 'Game was successfully deleted!' });
 
-        return false;
+        return;
 
       case 'edit':
         if (!game.isDone) {
           await this.telegramService.answerCallback({ callbackQueryId, text: 'You can edit only done game!' });
-          return false;
+          return;
         }
 
         if (!adminIds.includes(userId)) {
           await this.telegramService.answerCallback({ callbackQueryId, text: 'Only admin can do it!' });
-          return false;
+          return;
         }
 
         const gameBalances = this.getGameBalances(game);
@@ -285,7 +302,7 @@ export class Badminton implements IBadminton {
           );
         }
 
-        await this.databaseService.doneGame(gameId);
+        await this.databaseService.undoneGame(gameId);
         game.isDone = false;
 
         game = await this.databaseService.getGame(gameId);
@@ -295,13 +312,13 @@ export class Badminton implements IBadminton {
       case 'restore':
         if (!adminIds.includes(userId)) {
           await this.telegramService.answerCallback({ callbackQueryId, text: 'Only admin can do it!' });
-          return false;
+          return;
         }
 
         break;
 
       default:
-        return false;
+        return;
     }
 
     const gameBalances = this.getGameBalances(game);
@@ -340,10 +357,7 @@ export class Badminton implements IBadminton {
     } catch (error) {
       console.error('Error sending telegram message: ', error.message);
       console.error('Error sending telegram message: ', error.response.data.description);
-      return false;
     }
-
-    return true;
   }
 
   private getGameBalances({

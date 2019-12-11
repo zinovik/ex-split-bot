@@ -1,4 +1,5 @@
-import 'babel-polyfill';
+import 'core-js/stable';
+import 'regenerator-runtime/runtime';
 
 import * as dotenv from 'dotenv';
 
@@ -13,7 +14,7 @@ import { IEvent } from './model/IEvent.interface';
 dotenv.config();
 
 exports.handler = async ({ body, queryStringParameters: { token } }: IEvent, context: never) => {
-  console.log(`New request with token: ${token}`);
+  console.log('New request');
 
   if (process.env.CHAT_USERNAME === undefined) {
     throw new ConfigParameterNotDefinedError('CHAT_USERNAME');
@@ -58,7 +59,7 @@ exports.handler = async ({ body, queryStringParameters: { token } }: IEvent, con
   try {
     await badminton.processMessage(body);
   } catch (error) {
-    console.error('Unexpected error occurred.', error.message);
+    console.error('Unexpected error occurred: ', error.message);
   }
 
   return {
