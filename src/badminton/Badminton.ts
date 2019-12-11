@@ -267,13 +267,15 @@ export class Badminton implements IBadminton {
           return;
         }
 
-        const gameBalances = this.getGameBalances(game);
+        if (!game.isFree) {
+          const gameBalances = this.getGameBalances(game);
 
-        for (let i = 0; i < game.playUsers.length; i++) {
-          await this.databaseService.setUserBalance(
-            game.playUsers[i].id,
-            Number(game.playUsers[i].balance) - gameBalances[i].gameBalance,
-          );
+          for (let i = 0; i < game.playUsers.length; i++) {
+            await this.databaseService.setUserBalance(
+              game.playUsers[i].id,
+              Number(game.playUsers[i].balance) - gameBalances[i].gameBalance,
+            );
+          }
         }
 
         await this.databaseService.undoneGame(gameId);
