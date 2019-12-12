@@ -1,7 +1,8 @@
 {
   "editor.tabSize": 2,
   "eslint.autoFixOnSave": true,
+  "eslint.validate": [{ "language": "typescript", "autoFix": true }],
   "editor.formatOnSave": true,
   "files.insertFinalNewline": true,
-  "importSorter.importStringConfiguration.tabSize": 2,
+  "importSorter.importStringConfiguration.tabSize": 2
 }
