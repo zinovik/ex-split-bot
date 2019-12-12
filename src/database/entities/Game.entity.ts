@@ -43,7 +43,7 @@ export class Game extends DefaultNamingStrategy {
   @Column('boolean', { name: 'is_done' })
   public isDone: boolean;
 
-  @Column('boolean', { name: 'is_deleted', nullable: true })
+  @Column('boolean', { name: 'is_deleted' })
   public isDeleted: boolean;
 
   @CreateDateColumn({ name: 'created_at' })
