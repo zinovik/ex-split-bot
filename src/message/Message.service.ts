@@ -77,12 +77,12 @@ export class MessageService implements IMessageService {
     return Number(text.split('\n')[0].replace('Game #', ''));
   }
 
-  getReplyMarkup(): IReplyMarkup {
+  getReplyMarkup(isFree = false): IReplyMarkup {
     return {
       inline_keyboard: [
         [
           { text: 'play', callback_data: 'play' },
-          { text: 'pay', callback_data: 'pay' },
+          ...(isFree ? [] : [{ text: 'pay', callback_data: 'pay' }]),
           { text: 'free', callback_data: 'free' },
           { text: 'done', callback_data: 'done' },
           { text: 'delete', callback_data: 'delete' },

@@ -103,7 +103,7 @@ describe('Scheduler', () => {
       },
       gameMessageText,
     );
-    messageServiceMockGetReplyMarkup(replyMarkup);
+    messageServiceMockGetReplyMarkup(false, replyMarkup);
     telegramServiceMockSendMessage({
       replyMarkup: JSON.stringify(replyMarkup),
       text: gameMessageText,
@@ -183,9 +183,9 @@ describe('Scheduler', () => {
       .verifiable(Times.once());
   }
 
-  function messageServiceMockGetReplyMarkup(replyMarkup: string): void {
+  function messageServiceMockGetReplyMarkup(isFree: boolean, replyMarkup: string): void {
     messageServiceMock
-      .setup((x: IMessageService) => x.getReplyMarkup())
+      .setup((x: IMessageService) => x.getReplyMarkup(isFree))
       .returns(() => (replyMarkup as unknown) as IReplyMarkup)
       .verifiable(Times.once());
   }

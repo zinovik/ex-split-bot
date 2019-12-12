@@ -109,7 +109,7 @@ export class Badminton implements IBadminton {
       gameBalances: [{ userMarkdown, gameBalance: 0 }],
     });
 
-    const replyMarkup = this.messageService.getReplyMarkup();
+    const replyMarkup = this.messageService.getReplyMarkup(false);
 
     try {
       await this.telegramService.sendMessage({
@@ -219,11 +219,13 @@ export class Badminton implements IBadminton {
             callbackQueryId,
             text: 'You can not done game if it is not free and nobody payed!',
           });
+
           return;
         }
 
         if (game.createdBy.id !== userId && !adminIds.includes(userId)) {
           await this.telegramService.answerCallback({ callbackQueryId, text: 'You can done only your own games!' });
+
           return;
         }
 
@@ -235,8 +237,12 @@ export class Badminton implements IBadminton {
       case 'delete':
         if (game.createdBy.id !== userId && !adminIds.includes(userId)) {
           await this.telegramService.answerCallback({ callbackQueryId, text: 'You can delete only your own games!' });
+
           return;
         }
+
+        await this.databaseService.deleteGame(gameId);
+        game.isDeleted = true;
 
         const newText = this.messageService.getDeletedGameMessageText({
           gameId: game.id,
@@ -259,11 +265,13 @@ export class Badminton implements IBadminton {
       case 'edit':
         if (!game.isDone) {
           await this.telegramService.answerCallback({ callbackQueryId, text: 'You can edit only done game!' });
+
           return;
         }
 
         if (!adminIds.includes(userId)) {
           await this.telegramService.answerCallback({ callbackQueryId, text: 'Only admin can do it!' });
+
           return;
         }
 
@@ -288,8 +296,12 @@ export class Badminton implements IBadminton {
       case 'restore':
         if (!adminIds.includes(userId)) {
           await this.telegramService.answerCallback({ callbackQueryId, text: 'Only admin can do it!' });
+
           return;
         }
+
+        await this.databaseService.restoreGame(gameId);
+        game.isDeleted = false;
 
         break;
 
@@ -319,7 +331,7 @@ export class Badminton implements IBadminton {
 
     const replyMarkup = game.isDone
       ? this.messageService.getDoneGameReplyMarkup()
-      : this.messageService.getReplyMarkup();
+      : this.messageService.getReplyMarkup(game.isFree);
 
     try {
       await this.telegramService.editMessageText({

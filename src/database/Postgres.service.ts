@@ -66,8 +66,8 @@ export class PostgresService implements IDatabaseService {
 
     const [{ id: gameId }] = await this.connection.query(
       `
-      INSERT INTO "game" ("price", "is_free", "is_done", "created_by", "pay_by")
-      VALUES ($1, $2, $2, $3, $3)
+      INSERT INTO "game" ("price", "is_free", "is_done", "is_deleted", "created_by", "pay_by")
+      VALUES ($1, $2, $2, $2, $3, $3)
       RETURNING "id"
     `,
       [price, false, userId],
@@ -83,7 +83,7 @@ export class PostgresService implements IDatabaseService {
 
     const [game] = await this.connection.query(
       `
-      SELECT "id", "price", "is_free" as "isFree", "is_done" as "isDone",
+      SELECT "id", "price", "is_free" as "isFree", "is_done" as "isDone", "is_deleted" as "isDeleted",
              "created_by" as "createdById", "pay_by" as "payById"
       FROM "game"
       WHERE "game"."id" = $1
@@ -190,6 +190,28 @@ export class PostgresService implements IDatabaseService {
       `
       UPDATE "game"
       SET "is_done" = $2
+      WHERE "game"."id" = $1
+    `,
+      [gameId, false],
+    );
+  }
+
+  async deleteGame(gameId: number): Promise<void> {
+    await this.connection.query(
+      `
+      UPDATE "game"
+      SET "is_deleted" = $2
+      WHERE "game"."id" = $1
+    `,
+      [gameId, true],
+    );
+  }
+
+  async restoreGame(gameId: number): Promise<void> {
+    await this.connection.query(
+      `
+      UPDATE "game"
+      SET "is_deleted" = $2
       WHERE "game"."id" = $1
     `,
       [gameId, false],

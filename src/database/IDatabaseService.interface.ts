@@ -22,5 +22,8 @@ export interface IDatabaseService {
   doneGame(gameId: number): Promise<void>;
   undoneGame(gameId: number): Promise<void>;
 
+  deleteGame(gameId: number): Promise<void>;
+  restoreGame(gameId: number): Promise<void>;
+
   closeConnection(): Promise<void>;
 }
