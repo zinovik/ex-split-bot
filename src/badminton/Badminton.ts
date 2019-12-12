@@ -6,7 +6,6 @@ import { IMessageService } from '../message/IMessageService.interface';
 
 import { IMessageBody } from '../common/model/IMessageBody.interface';
 import { ICallbackMessageBody } from '../common/model/ICallbackMessageBody.interface';
-import { User } from '../database/entities/User.entity';
 
 export class Badminton implements IBadminton {
   constructor(
@@ -75,7 +74,7 @@ export class Badminton implements IBadminton {
       return;
     }
 
-    await this.upsertUser({ id: userId, username, firstName, lastName });
+    await this.databaseService.upsertUser({ id: userId, username, firstName, lastName });
     await this.createGame({ userId, messageChatUsername, username, firstName });
   }
 
@@ -134,7 +133,7 @@ export class Badminton implements IBadminton {
       },
     } = messageParsed;
 
-    await this.upsertUser({ id: userId, username, firstName, lastName });
+    await this.databaseService.upsertUser({ id: userId, username, firstName, lastName });
 
     const gameId = this.messageService.parseGameId(text);
     const game = await this.databaseService.getGame(gameId);
@@ -335,25 +334,6 @@ export class Badminton implements IBadminton {
       console.error('Error sending telegram message: ', error.message);
       console.error('Error sending telegram message: ', error.response.data.description);
     }
-  }
-
-  private async upsertUser({
-    id,
-    username,
-    firstName,
-    lastName,
-  }: {
-    id: number;
-    username?: string;
-    firstName?: string;
-    lastName?: string;
-  }): Promise<void> {
-    const user = new User();
-    user.id = id;
-    user.username = username;
-    user.firstName = firstName;
-    user.lastName = lastName;
-    await this.databaseService.upsertUser(user);
   }
 
   private getGameBalances({

@@ -1,8 +1,7 @@
-import { User } from './entities/User.entity';
 import { Game } from './entities/Game.entity';
 
 export interface IDatabaseService {
-  upsertUser(user: User): Promise<void>;
+  upsertUser(user: { id: number; username?: string; firstName?: string; lastName?: string }): Promise<void>;
 
   getUserBalance(userId: number): Promise<number>;
   setUserBalance(userId: number, balance: number): Promise<void>;

@@ -11,7 +11,6 @@ import { IMessageService } from '../../../src/message/IMessageService.interface'
 
 import { IMessageBody } from '../../../src/common/model/IMessageBody.interface';
 import { IReplyMarkup } from '../../../src/common/model/IReplyMarkup.interface';
-import { User } from '../../../src/database/entities/User.entity';
 
 describe('Scheduler', () => {
   let configurationServiceMock: IMock<IConfigurationService>;
@@ -48,7 +47,7 @@ describe('Scheduler', () => {
     const gameCost = 9;
     const adminIds = [111];
     const gameId = 11;
-    const initialUser = {
+    const user = {
       id: 987,
       firstName: 'test-first-name',
       lastName: 'test-last-name',
@@ -62,11 +61,11 @@ describe('Scheduler', () => {
       message: {
         message_id: 0,
         from: {
-          id: initialUser.id,
+          id: user.id,
           is_bot: false,
-          first_name: initialUser.firstName,
-          last_name: initialUser.lastName,
-          username: initialUser.username,
+          first_name: user.firstName,
+          last_name: user.lastName,
+          username: user.username,
           language_code: 'en',
         },
         chat: {
@@ -79,25 +78,20 @@ describe('Scheduler', () => {
         text: 'game',
       },
     };
-    const user = new User();
-    user.id = initialUser.id;
-    user.firstName = initialUser.firstName;
-    user.lastName = initialUser.lastName;
-    user.username = initialUser.username;
     const gameMessageText = 'test-telegram-message-text';
     configurationServiceMockgGetConfiguration({ chatUsername, gameCost, adminIds });
     databaseServiceMockUpsertUser(user);
-    databaseServiceMockCreateGame({ gameCost, userId: initialUser.id }, gameId);
+    databaseServiceMockCreateGame({ gameCost, userId: user.id }, gameId);
     messageServiceMockGetUserMarkDown(
-      { username: initialUser.username, firstName: initialUser.firstName, id: initialUser.id },
+      { username: user.username, firstName: user.firstName, id: user.id },
       userMarkdown,
     );
-    databaseServiceMockGetUserMarkdown(initialUser.id, balance);
+    databaseServiceMockGetUserMarkdown(user.id, balance);
     messageServiceMockGetGameMessageText(
       {
         gameId,
         createdByUserMarkdown: userMarkdown,
-        playUsers: [{ username: initialUser.username, firstName: initialUser.firstName, id: initialUser.id, balance }],
+        playUsers: [{ username: user.username, firstName: user.firstName, id: user.id, balance }],
         payByUserMarkdown: userMarkdown,
         gameBalances: [{ userMarkdown, gameBalance: 0 }],
       },
@@ -133,7 +127,12 @@ describe('Scheduler', () => {
       .verifiable(Times.exactly(2));
   }
 
-  function databaseServiceMockUpsertUser(user: User): void {
+  function databaseServiceMockUpsertUser(user: {
+    id: number;
+    username?: string;
+    firstName?: string;
+    lastName?: string;
+  }): void {
     databaseServiceMock
       .setup((x: IDatabaseService) => x.upsertUser(user))
       .returns(async () => undefined)

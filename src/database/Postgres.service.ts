@@ -12,7 +12,17 @@ export class PostgresService implements IDatabaseService {
     this.databaseUrl = databaseUrl;
   }
 
-  async upsertUser(user: User): Promise<void> {
+  async upsertUser({
+    id,
+    username,
+    firstName,
+    lastName,
+  }: {
+    id: number;
+    username?: string;
+    firstName?: string;
+    lastName?: string;
+  }): Promise<void> {
     await this.createConnection();
 
     const balance = 0;
@@ -25,7 +35,7 @@ export class PostgresService implements IDatabaseService {
       SET "username" = $3, "first_name" = $4, "last_name" = $5
       WHERE "user"."id" = $1
     `,
-      [user.id, balance, user.username, user.firstName, user.lastName],
+      [id, balance, username, firstName, lastName],
     );
   }
 
