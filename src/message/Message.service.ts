@@ -44,7 +44,7 @@ export class MessageService implements IMessageService {
   private getBalancesBeforeGame(
     playUsers: { username?: string; firstName?: string; id: number; balance: number }[],
   ): string {
-    return `Balances before game:` + `${playUsers.map(u => `\n${this.getUserMarkdown(u)}: ${u.balance} BYN`)}`;
+    return `Balances before the game:` + `${playUsers.map(u => `\n${this.getUserMarkdown(u)}: ${u.balance} BYN`)}`;
   }
 
   private getPlayUsers(playUsers: { username?: string; firstName?: string; id: number }[]): string {
@@ -66,11 +66,7 @@ export class MessageService implements IMessageService {
     gameId: number;
     createdByUserMarkdown: string;
   }): string {
-    return (
-      `${this.getGameNumber(gameId)}\n` +
-      `${this.getGameCreated(createdByUserMarkdown, false)}\n` +
-      `Game was deleted :(`
-    );
+    return `${this.getGameNumber(gameId)}\n` + `Game created by ${createdByUserMarkdown} was deleted :(`;
   }
 
   parseGameId(text: string): number {

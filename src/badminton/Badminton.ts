@@ -49,11 +49,6 @@ export class Badminton implements IBadminton {
   private async processGroupMessage(messageBody: IMessageBody): Promise<void> {
     const { chatUsername: allowedChatUsername } = this.configurationService.getConfiguration();
 
-    if (!messageBody.message) {
-      console.error('No message body!');
-      return;
-    }
-
     const {
       message: {
         text,
@@ -139,81 +134,73 @@ export class Badminton implements IBadminton {
       },
     } = messageParsed;
 
-    const user = new User();
-    user.id = userId;
-    user.username = username;
-    user.firstName = firstName;
-    user.lastName = lastName;
-    await this.databaseService.upsertUser(user);
-    user.balance = await this.databaseService.getUserBalance(userId);
+    await this.upsertUser({ id: userId, username, firstName, lastName });
 
     const gameId = this.messageService.parseGameId(text);
-    let game = await this.databaseService.getGame(gameId);
+    const game = await this.databaseService.getGame(gameId);
 
     console.log(`Current game: ${JSON.stringify(game)}`);
 
-    if (game.isDone && data !== 'edit') {
-      return;
-    }
-
     switch (data) {
       case 'play':
+        if (game.isDeleted || game.isDone) {
+          return;
+        }
+
         if (game.playUsers.some(u => u.id === userId)) {
           await this.databaseService.removePlayUser(gameId, userId);
-          game.playUsers = game.playUsers.filter(u => u.id !== userId);
 
           if (game.payBy && game.payBy.id === userId) {
             await this.databaseService.updatePayBy(gameId, null);
-            game.payBy = null;
           }
 
           break;
         }
 
         await this.databaseService.addPlayUser(gameId, userId);
-        game.playUsers.push(user);
 
         break;
 
       case 'pay':
-        if (game.isFree) {
-          await this.telegramService.answerCallback({ callbackQueryId, text: 'You can not pay in free game!' });
+        if (game.isDeleted || game.isDone || game.isFree) {
           return;
         }
 
         if (game.payBy && game.payBy.id === userId) {
           await this.databaseService.updatePayBy(gameId, null);
-          game.payBy = null;
 
           break;
         }
 
         await this.databaseService.updatePayBy(gameId, userId);
-        game.payBy = user;
 
         if (!game.playUsers.some(u => u.id === userId)) {
           await this.databaseService.addPlayUser(gameId, userId);
-          game.playUsers.push(user);
         }
 
         break;
 
       case 'free':
+        if (game.isDeleted || game.isDone) {
+          return;
+        }
+
         if (game.isFree) {
           await this.databaseService.notFreeGame(gameId);
-          game.isFree = false;
 
           break;
         }
 
         await this.databaseService.freeGame(gameId);
         await this.databaseService.updatePayBy(gameId, null);
-        game.isFree = true;
-        game.payBy = null;
 
         break;
 
       case 'done':
+        if (game.isDeleted || game.isDone) {
+          return;
+        }
+
         if (!game.isFree && !game.payBy) {
           await this.telegramService.answerCallback({
             callbackQueryId,
@@ -230,11 +217,14 @@ export class Badminton implements IBadminton {
         }
 
         await this.databaseService.doneGame(gameId);
-        game.isDone = true;
 
         break;
 
       case 'delete':
+        if (game.isDeleted || game.isDone) {
+          return;
+        }
+
         if (game.createdBy.id !== userId && !adminIds.includes(userId)) {
           await this.telegramService.answerCallback({ callbackQueryId, text: 'You can delete only your own games!' });
 
@@ -242,27 +232,14 @@ export class Badminton implements IBadminton {
         }
 
         await this.databaseService.deleteGame(gameId);
-        game.isDeleted = true;
 
-        const newText = this.messageService.getDeletedGameMessageText({
-          gameId: game.id,
-          createdByUserMarkdown: this.messageService.getUserMarkdown(game.createdBy),
-        });
-
-        const replyMarkup = this.messageService.getDeletedGameReplyMarkup();
-
-        await this.telegramService.editMessageText({
-          text: `${newText}`,
-          chatId,
-          messageId,
-          replyMarkup: JSON.stringify(replyMarkup),
-        });
-
-        await this.telegramService.answerCallback({ callbackQueryId, text: 'Game was successfully deleted!' });
-
-        return;
+        break;
 
       case 'edit':
+        if (game.isDeleted || !game.isDone) {
+          return;
+        }
+
         if (!game.isDone) {
           await this.telegramService.answerCallback({ callbackQueryId, text: 'You can edit only done game!' });
 
@@ -287,13 +264,14 @@ export class Badminton implements IBadminton {
         }
 
         await this.databaseService.undoneGame(gameId);
-        game.isDone = false;
-
-        game = await this.databaseService.getGame(gameId);
 
         break;
 
       case 'restore':
+        if (!game.isDeleted || game.isDone) {
+          return;
+        }
+
         if (!adminIds.includes(userId)) {
           await this.telegramService.answerCallback({ callbackQueryId, text: 'Only admin can do it!' });
 
@@ -301,7 +279,6 @@ export class Badminton implements IBadminton {
         }
 
         await this.databaseService.restoreGame(gameId);
-        game.isDeleted = false;
 
         break;
 
@@ -309,29 +286,38 @@ export class Badminton implements IBadminton {
         return;
     }
 
-    const gameBalances = this.getGameBalances(game);
+    const updatedGame = await this.databaseService.getGame(gameId);
 
-    if (game.isDone && !game.isFree) {
-      for (let i = 0; i < game.playUsers.length; i++) {
+    const gameBalances = this.getGameBalances(updatedGame);
+
+    if (updatedGame.isDone && !updatedGame.isFree) {
+      for (let i = 0; i < updatedGame.playUsers.length; i++) {
         await this.databaseService.setUserBalance(
-          game.playUsers[i].id,
-          Number(game.playUsers[i].balance) + gameBalances[i].gameBalance,
+          updatedGame.playUsers[i].id,
+          Number(updatedGame.playUsers[i].balance) + gameBalances[i].gameBalance,
         );
       }
     }
 
-    const newText = this.messageService.getGameMessageText({
-      gameId: game.id,
-      createdByUserMarkdown: this.messageService.getUserMarkdown(game.createdBy),
-      playUsers: game.playUsers,
-      payByUserMarkdown: game.payBy ? this.messageService.getUserMarkdown(game.payBy) : '',
-      isFree: game.isFree,
-      gameBalances,
-    });
+    const newText = updatedGame.isDeleted
+      ? this.messageService.getDeletedGameMessageText({
+          gameId: updatedGame.id,
+          createdByUserMarkdown: this.messageService.getUserMarkdown(updatedGame.createdBy),
+        })
+      : this.messageService.getGameMessageText({
+          gameId: updatedGame.id,
+          createdByUserMarkdown: this.messageService.getUserMarkdown(updatedGame.createdBy),
+          playUsers: updatedGame.playUsers,
+          payByUserMarkdown: updatedGame.payBy ? this.messageService.getUserMarkdown(updatedGame.payBy) : '',
+          isFree: updatedGame.isFree,
+          gameBalances,
+        });
 
-    const replyMarkup = game.isDone
+    const replyMarkup = updatedGame.isDeleted
+      ? this.messageService.getDeletedGameReplyMarkup()
+      : updatedGame.isDone
       ? this.messageService.getDoneGameReplyMarkup()
-      : this.messageService.getReplyMarkup(game.isFree);
+      : this.messageService.getReplyMarkup(updatedGame.isFree);
 
     try {
       await this.telegramService.editMessageText({
@@ -341,7 +327,10 @@ export class Badminton implements IBadminton {
         replyMarkup: JSON.stringify(replyMarkup),
       });
 
-      await this.telegramService.answerCallback({ callbackQueryId, text: 'Game was successfully updated!' });
+      await this.telegramService.answerCallback({
+        callbackQueryId,
+        text: updatedGame.isDeleted ? 'Game was successfully deleted!' : 'Game was successfully updated!',
+      });
     } catch (error) {
       console.error('Error sending telegram message: ', error.message);
       console.error('Error sending telegram message: ', error.response.data.description);
