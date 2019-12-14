@@ -1,4 +1,5 @@
 import { Game } from './entities/Game.entity';
+import { User } from './entities/User.entity';
 
 export interface IDatabaseService {
   upsertUser(user: { id: number; username?: string; firstName?: string; lastName?: string }): Promise<void>;
@@ -23,6 +24,8 @@ export interface IDatabaseService {
 
   deleteGame(gameId: number): Promise<void>;
   restoreGame(gameId: number): Promise<void>;
+
+  getUsers(): Promise<User[]>;
 
   closeConnection(): Promise<void>;
 }

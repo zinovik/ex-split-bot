@@ -230,6 +230,21 @@ export class PostgresService implements IDatabaseService {
     );
   }
 
+  async getUsers(): Promise<User[]> {
+    await this.createConnection();
+
+    const users = await this.connection.query(
+      `
+      SELECT "balance", "username", "first_name" as "firstName", "last_name" as "lastName"
+      FROM "user"
+    `,
+    );
+
+    await this.closeConnection();
+
+    return users;
+  }
+
   async closeConnection(): Promise<void> {
     if (!this.connection) {
       return;
