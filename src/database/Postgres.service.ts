@@ -102,27 +102,20 @@ export class PostgresService implements IDatabaseService {
       [gameId],
     );
 
-    const users = await this.connection.query(
+    const playUsers = await this.connection.query(
       `
       SELECT "id", "balance", "username", "first_name" as "firstName", "last_name" as "lastName"
       FROM "user"
-    `,
-    );
-
-    const playUsers = await this.connection.query(
-      `
-      SELECT "userId"
-      FROM "play"
-      WHERE "play"."gameId" = $1
+      where "user"."id" IN (SELECT "userId"
+                            FROM "play"
+                            WHERE "play"."gameId" = $1)
     `,
       [gameId],
     );
 
-    console.log(123, selectedGame);
-
     const game = {
       ...selectedGame,
-      playUsers: playUsers.map(({ userId }: { userId: number }) => users.find((u: User) => u.id === userId)),
+      playUsers,
       createdBy: {
         id: selectedGame['createdBy.id'],
         username: selectedGame['createdBy.username'],
