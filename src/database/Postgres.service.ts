@@ -40,8 +40,6 @@ export class PostgresService implements IDatabaseService {
   }
 
   async getUserBalance(userId: number): Promise<number> {
-    await this.createConnection();
-
     const users = await this.connection.query(
       `
       SELECT "balance"
@@ -59,8 +57,6 @@ export class PostgresService implements IDatabaseService {
   }
 
   async setUserBalance(userId: number, balance: number): Promise<void> {
-    await this.createConnection();
-
     await this.connection.query(
       `
       UPDATE "user"
@@ -72,8 +68,6 @@ export class PostgresService implements IDatabaseService {
   }
 
   async createGame(price: number, userId: number): Promise<number> {
-    await this.createConnection();
-
     const [{ id: gameId }] = await this.connection.query(
       `
       INSERT INTO "game" ("price", "is_free", "is_done", "is_deleted", "created_by", "pay_by")
@@ -89,13 +83,20 @@ export class PostgresService implements IDatabaseService {
   }
 
   async getGame(gameId: number): Promise<Game> {
-    await this.createConnection();
-
-    const [game] = await this.connection.query(
+    const [selectedGame] = await this.connection.query(
       `
-      SELECT "id", "price", "is_free" as "isFree", "is_done" as "isDone", "is_deleted" as "isDeleted",
-             "created_by" as "createdById", "pay_by" as "payById"
+      SELECT "game"."id", "price", "is_free" as "isFree", "is_done" as "isDone", "is_deleted" as "isDeleted",
+             "created_by"."id" as "createdBy.id",
+             "created_by"."username" as "createdBy.username",
+             "created_by"."first_name" as "createdBy.firstName",
+             "created_by"."last_name" as "createdBy.lastName",
+             "pay_by"."id" as "payBy.id",
+             "pay_by"."username" as "payBy.username",
+             "pay_by"."first_name" as "payBy.firstName",
+             "pay_by"."last_name" as "payBy.lastName"
       FROM "game"
+      LEFT JOIN "user" "created_by" on "game"."created_by" = "created_by"."id"
+      LEFT JOIN "user" "pay_by" on "game"."pay_by" = "pay_by"."id"
       WHERE "game"."id" = $1
     `,
       [gameId],
@@ -117,17 +118,29 @@ export class PostgresService implements IDatabaseService {
       [gameId],
     );
 
-    return {
-      ...game,
+    console.log(123, selectedGame);
+
+    const game = {
+      ...selectedGame,
       playUsers: playUsers.map(({ userId }: { userId: number }) => users.find((u: User) => u.id === userId)),
-      createdBy: users.find((u: User) => u.id === game.createdById),
-      payBy: users.find((u: User) => u.id === game.payById),
+      createdBy: {
+        id: selectedGame['createdBy.id'],
+        username: selectedGame['createdBy.username'],
+        firstName: selectedGame['createdBy.firstName'],
+        lastName: selectedGame['createdBy.lastName'],
+      },
+      payBy: selectedGame['payBy.id'] && {
+        id: selectedGame['payBy.id'],
+        username: selectedGame['payBy.username'],
+        firstName: selectedGame['payBy.firstName'],
+        lastName: selectedGame['payBy.lastName'],
+      },
     };
+
+    return game;
   }
 
   async addPlayUser(gameId: number, userId: number): Promise<void> {
-    await this.createConnection();
-
     await this.connection.query(
       `
       INSERT INTO "play" ("gameId", "userId")
@@ -138,8 +151,6 @@ export class PostgresService implements IDatabaseService {
   }
 
   async removePlayUser(gameId: number, userId: number): Promise<void> {
-    await this.createConnection();
-
     await this.connection.query(
       `
       DELETE FROM "play"
@@ -150,8 +161,6 @@ export class PostgresService implements IDatabaseService {
   }
 
   async updatePayBy(gameId: number, userId: number | null): Promise<void> {
-    await this.createConnection();
-
     await this.connection.query(
       `
       UPDATE "game"
@@ -243,13 +252,17 @@ export class PostgresService implements IDatabaseService {
 
     const dbUrl = url.parse(this.databaseUrl);
 
+    if (!dbUrl.host || !dbUrl.auth || !dbUrl.path) {
+      throw new Error('Error parsing database config!');
+    }
+
     this.connection = await createConnection({
       type: 'postgres',
-      host: dbUrl.host!.split(':')[0],
+      host: dbUrl.host.split(':')[0],
       port: Number(dbUrl.port),
-      username: dbUrl.auth!.split(':')[0],
-      password: dbUrl.auth!.split(':')[1],
-      database: dbUrl.path!.split('/')[1],
+      username: dbUrl.auth.split(':')[0],
+      password: dbUrl.auth.split(':')[1],
+      database: dbUrl.path.split('/')[1],
       entities: [User, Game],
       synchronize: true,
       logging: true,

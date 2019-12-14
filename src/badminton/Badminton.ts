@@ -6,6 +6,7 @@ import { IMessageService } from '../message/IMessageService.interface';
 
 import { IMessageBody } from '../common/model/IMessageBody.interface';
 import { ICallbackMessageBody } from '../common/model/ICallbackMessageBody.interface';
+import { Game } from '../database/entities/Game.entity';
 
 export class Badminton implements IBadminton {
   constructor(
@@ -75,10 +76,10 @@ export class Badminton implements IBadminton {
     }
 
     await this.databaseService.upsertUser({ id: userId, username, firstName, lastName });
-    await this.createGame({ userId, messageChatUsername, username, firstName });
+    await this.createGameAndSendMessage({ userId, messageChatUsername, username, firstName });
   }
 
-  private async createGame({
+  private async createGameAndSendMessage({
     userId,
     messageChatUsername,
     username,
@@ -142,143 +143,47 @@ export class Badminton implements IBadminton {
 
     switch (data) {
       case 'play':
-        if (game.isDeleted || game.isDone) {
-          return;
-        }
-
-        if (game.playUsers.some(u => u.id === userId)) {
-          await this.databaseService.removePlayUser(gameId, userId);
-
-          if (game.payBy && game.payBy.id === userId) {
-            await this.databaseService.updatePayBy(gameId, null);
-          }
-
-          break;
-        }
-
-        await this.databaseService.addPlayUser(gameId, userId);
-
+        await this.playGame(game, userId);
         break;
 
       case 'pay':
-        if (game.isDeleted || game.isDone || game.isFree) {
-          return;
-        }
-
-        if (game.payBy && game.payBy.id === userId) {
-          await this.databaseService.updatePayBy(gameId, null);
-
-          break;
-        }
-
-        await this.databaseService.updatePayBy(gameId, userId);
-
-        if (!game.playUsers.some(u => u.id === userId)) {
-          await this.databaseService.addPlayUser(gameId, userId);
-        }
-
+        await this.payGame(game, userId);
         break;
 
       case 'free':
-        if (game.isDeleted || game.isDone) {
-          return;
-        }
-
-        if (game.isFree) {
-          await this.databaseService.notFreeGame(gameId);
-
-          break;
-        }
-
-        await this.databaseService.freeGame(gameId);
-        await this.databaseService.updatePayBy(gameId, null);
-
+        await this.freeGame(game);
         break;
 
       case 'done':
-        if (game.isDeleted || game.isDone) {
+        const doneFailMessage = await this.doneGame(game, userId, adminIds); // eslint-disable-line no-case-declarations
+        if (doneFailMessage) {
+          await this.telegramService.answerCallback({ callbackQueryId, text: doneFailMessage });
           return;
         }
-
-        if (!game.isFree && !game.payBy) {
-          await this.telegramService.answerCallback({
-            callbackQueryId,
-            text: 'You can not done game if it is not free and nobody payed!',
-          });
-
-          return;
-        }
-
-        if (game.createdBy.id !== userId && !adminIds.includes(userId)) {
-          await this.telegramService.answerCallback({ callbackQueryId, text: 'You can done only your own games!' });
-
-          return;
-        }
-
-        await this.databaseService.doneGame(gameId);
-
         break;
 
       case 'delete':
-        if (game.isDeleted || game.isDone) {
+        const deleteFailMessage = await this.deleteGame(game, userId, adminIds); // eslint-disable-line no-case-declarations
+        if (deleteFailMessage) {
+          await this.telegramService.answerCallback({ callbackQueryId, text: deleteFailMessage });
           return;
         }
-
-        if (game.createdBy.id !== userId && !adminIds.includes(userId)) {
-          await this.telegramService.answerCallback({ callbackQueryId, text: 'You can delete only your own games!' });
-
-          return;
-        }
-
-        await this.databaseService.deleteGame(gameId);
-
-        break;
-
-      case 'edit':
-        if (game.isDeleted || !game.isDone) {
-          return;
-        }
-
-        if (!game.isDone) {
-          await this.telegramService.answerCallback({ callbackQueryId, text: 'You can edit only done game!' });
-
-          return;
-        }
-
-        if (!adminIds.includes(userId)) {
-          await this.telegramService.answerCallback({ callbackQueryId, text: 'Only admin can do it!' });
-
-          return;
-        }
-
-        if (!game.isFree) {
-          const gameBalances = this.getGameBalances(game);
-
-          for (let i = 0; i < game.playUsers.length; i++) {
-            await this.databaseService.setUserBalance(
-              game.playUsers[i].id,
-              Number(game.playUsers[i].balance) - gameBalances[i].gameBalance,
-            );
-          }
-        }
-
-        await this.databaseService.undoneGame(gameId);
-
         break;
 
       case 'restore':
-        if (!game.isDeleted || game.isDone) {
+        const restoreFailMessage = await this.restoreGame(game, userId, adminIds); // eslint-disable-line no-case-declarations
+        if (restoreFailMessage) {
+          await this.telegramService.answerCallback({ callbackQueryId, text: restoreFailMessage });
           return;
         }
+        break;
 
-        if (!adminIds.includes(userId)) {
-          await this.telegramService.answerCallback({ callbackQueryId, text: 'Only admin can do it!' });
-
+      case 'edit':
+        const editFailMessage = await this.editGame(game, userId, adminIds); // eslint-disable-line no-case-declarations
+        if (editFailMessage) {
+          await this.telegramService.answerCallback({ callbackQueryId, text: editFailMessage });
           return;
         }
-
-        await this.databaseService.restoreGame(gameId);
-
         break;
 
       default:
@@ -289,51 +194,142 @@ export class Badminton implements IBadminton {
 
     const gameBalances = this.getGameBalances(updatedGame);
 
-    if (updatedGame.isDone && !updatedGame.isFree) {
-      for (let i = 0; i < updatedGame.playUsers.length; i++) {
+    await this.updateGameMessage({
+      game: data === 'done' ? ({ ...updatedGame, playUsers: game.playUsers } as Game) : updatedGame,
+      chatId,
+      messageId,
+      callbackQueryId,
+      gameBalances,
+    });
+  }
+
+  private async playGame(game: Game, userId: number): Promise<void> {
+    if (game.isDeleted || game.isDone) {
+      throw new Error('You can not play deleted or done game');
+    }
+
+    if (game.playUsers.some(u => u.id === userId)) {
+      await this.databaseService.removePlayUser(game.id, userId);
+
+      if (game.payBy && game.payBy.id === userId) {
+        await this.databaseService.updatePayBy(game.id, null);
+      }
+
+      return;
+    }
+
+    await this.databaseService.addPlayUser(game.id, userId);
+  }
+
+  private async payGame(game: Game, userId: number): Promise<void> {
+    if (game.isDeleted || game.isDone || game.isFree) {
+      throw new Error('You can not play deleted, done or free game');
+    }
+
+    if (game.payBy && game.payBy.id === userId) {
+      await this.databaseService.updatePayBy(game.id, null);
+
+      return;
+    }
+
+    await this.databaseService.updatePayBy(game.id, userId);
+
+    if (!game.playUsers.some(u => u.id === userId)) {
+      await this.databaseService.addPlayUser(game.id, userId);
+    }
+  }
+
+  private async freeGame(game: Game): Promise<void> {
+    if (game.isDeleted || game.isDone) {
+      throw new Error('You can not free deleted or done game');
+    }
+
+    if (game.isFree) {
+      await this.databaseService.notFreeGame(game.id);
+
+      return;
+    }
+
+    await this.databaseService.freeGame(game.id);
+    await this.databaseService.updatePayBy(game.id, null);
+  }
+
+  private async doneGame(game: Game, userId: number, adminIds: number[]): Promise<string | void> {
+    if (game.isDeleted || game.isDone) {
+      throw new Error('You can not done deleted or done game');
+    }
+
+    if (!game.isFree && !game.payBy) {
+      return 'You can not done game if it is not free and nobody payed!';
+    }
+
+    if (game.createdBy.id !== userId && !adminIds.includes(userId)) {
+      return 'You can done only your own games!';
+    }
+
+    if (!game.isFree) {
+      const gameBalances = this.getGameBalances(game);
+
+      for (let i = 0; i < game.playUsers.length; i++) {
         await this.databaseService.setUserBalance(
-          updatedGame.playUsers[i].id,
-          Number(updatedGame.playUsers[i].balance) + gameBalances[i].gameBalance,
+          game.playUsers[i].id,
+          Number(game.playUsers[i].balance) + gameBalances[i].gameBalance,
         );
       }
     }
 
-    const newText = updatedGame.isDeleted
-      ? this.messageService.getDeletedGameMessageText({
-          gameId: updatedGame.id,
-          createdByUserMarkdown: this.messageService.getUserMarkdown(updatedGame.createdBy),
-        })
-      : this.messageService.getGameMessageText({
-          gameId: updatedGame.id,
-          createdByUserMarkdown: this.messageService.getUserMarkdown(updatedGame.createdBy),
-          playUsers: updatedGame.playUsers,
-          payByUserMarkdown: updatedGame.payBy ? this.messageService.getUserMarkdown(updatedGame.payBy) : '',
-          isFree: updatedGame.isFree,
-          gameBalances,
-        });
+    await this.databaseService.doneGame(game.id);
+  }
 
-    const replyMarkup = updatedGame.isDeleted
-      ? this.messageService.getDeletedGameReplyMarkup()
-      : updatedGame.isDone
-      ? this.messageService.getDoneGameReplyMarkup()
-      : this.messageService.getReplyMarkup(updatedGame.isFree);
-
-    try {
-      await this.telegramService.editMessageText({
-        text: `${newText}`,
-        chatId,
-        messageId,
-        replyMarkup: JSON.stringify(replyMarkup),
-      });
-
-      await this.telegramService.answerCallback({
-        callbackQueryId,
-        text: updatedGame.isDeleted ? 'Game was successfully deleted!' : 'Game was successfully updated!',
-      });
-    } catch (error) {
-      console.error('Error sending telegram message: ', error.message);
-      console.error('Error sending telegram message: ', error.response.data.description);
+  private async deleteGame(game: Game, userId: number, adminIds: number[]): Promise<string | void> {
+    if (game.isDeleted || game.isDone) {
+      throw new Error('You can not delete deleted or done game');
     }
+
+    if (game.createdBy.id !== userId && !adminIds.includes(userId)) {
+      return 'You can delete only your own games!';
+    }
+
+    await this.databaseService.deleteGame(game.id);
+  }
+
+  private async restoreGame(game: Game, userId: number, adminIds: number[]): Promise<string | void> {
+    if (!game.isDeleted || game.isDone) {
+      throw new Error('You can not restore not deleted or done game');
+    }
+
+    if (!adminIds.includes(userId)) {
+      return 'Only admin can do it!';
+    }
+
+    await this.databaseService.restoreGame(game.id);
+  }
+
+  private async editGame(game: Game, userId: number, adminIds: number[]): Promise<string | void> {
+    if (game.isDeleted || !game.isDone) {
+      throw new Error('You can not edit deleted or not done game');
+    }
+
+    if (!game.isDone) {
+      return 'You can edit only done game!';
+    }
+
+    if (!adminIds.includes(userId)) {
+      return 'Only admin can do it!';
+    }
+
+    if (!game.isFree) {
+      const gameBalances = this.getGameBalances(game);
+
+      for (let i = 0; i < game.playUsers.length; i++) {
+        await this.databaseService.setUserBalance(
+          game.playUsers[i].id,
+          Number(game.playUsers[i].balance) - gameBalances[i].gameBalance,
+        );
+      }
+    }
+
+    await this.databaseService.undoneGame(game.id);
   }
 
   private getGameBalances({
@@ -370,5 +366,56 @@ export class Badminton implements IBadminton {
     });
 
     return gameBalances;
+  }
+
+  private async updateGameMessage({
+    game,
+    chatId,
+    messageId,
+    callbackQueryId,
+    gameBalances,
+  }: {
+    game: Game;
+    chatId: number;
+    messageId: string;
+    callbackQueryId: string;
+    gameBalances: { userMarkdown: string; gameBalance: number }[];
+  }): Promise<string | void> {
+    const text = game.isDeleted
+      ? this.messageService.getDeletedGameMessageText({
+          gameId: game.id,
+          createdByUserMarkdown: this.messageService.getUserMarkdown(game.createdBy),
+        })
+      : this.messageService.getGameMessageText({
+          gameId: game.id,
+          createdByUserMarkdown: this.messageService.getUserMarkdown(game.createdBy),
+          playUsers: game.playUsers,
+          payByUserMarkdown: game.payBy ? this.messageService.getUserMarkdown(game.payBy) : '',
+          isFree: game.isFree,
+          gameBalances,
+        });
+
+    const replyMarkup = game.isDeleted
+      ? this.messageService.getDeletedGameReplyMarkup()
+      : game.isDone
+      ? this.messageService.getDoneGameReplyMarkup()
+      : this.messageService.getReplyMarkup(game.isFree);
+
+    try {
+      await this.telegramService.editMessageText({
+        text,
+        chatId,
+        messageId,
+        replyMarkup: JSON.stringify(replyMarkup),
+      });
+
+      await this.telegramService.answerCallback({
+        callbackQueryId,
+        text: game.isDeleted ? 'Game was successfully deleted!' : 'Game was successfully updated!',
+      });
+    } catch (error) {
+      console.error('Error sending telegram message: ', error.message);
+      console.error('Error sending telegram message: ', error.response.data.description);
+    }
   }
 }
