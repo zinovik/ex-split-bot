@@ -82,11 +82,11 @@ describe('Scheduler', () => {
     configurationServiceMockgGetConfiguration({ chatUsername, gameCost, adminIds });
     databaseServiceMockUpsertUser(user);
     databaseServiceMockCreateGame({ gameCost, userId: user.id }, gameId);
-    messageServiceMockGetUserMarkDown(
+    messageServiceMockGetUserMarkdown(
       { username: user.username, firstName: user.firstName, id: user.id },
       userMarkdown,
     );
-    databaseServiceMockGetUserMarkdown(user.id, balance);
+    databaseServiceMockGetUserBalance(user.id, balance);
     messageServiceMockGetGameMessageText(
       {
         gameId,
@@ -101,7 +101,7 @@ describe('Scheduler', () => {
     telegramServiceMockSendMessage({
       replyMarkup: JSON.stringify(replyMarkup),
       text: gameMessageText,
-      chatUsername: `@${chatUsername}`,
+      chatId: `@${chatUsername}`,
     });
     databaseServiceMockCloseConnection();
 
@@ -112,19 +112,15 @@ describe('Scheduler', () => {
     expect(true).toBeTruthy();
   });
 
-  function configurationServiceMockgGetConfiguration({
-    chatUsername,
-    gameCost,
-    adminIds,
-  }: {
+  function configurationServiceMockgGetConfiguration(configuration: {
     chatUsername: string;
     gameCost: number;
     adminIds: number[];
   }): void {
     configurationServiceMock
       .setup((x: IConfigurationService) => x.getConfiguration())
-      .returns(() => ({ chatUsername, gameCost, adminIds }))
-      .verifiable(Times.exactly(2));
+      .returns(() => configuration)
+      .verifiable(Times.once());
   }
 
   function databaseServiceMockUpsertUser(user: {
@@ -149,7 +145,7 @@ describe('Scheduler', () => {
       .verifiable(Times.once());
   }
 
-  function messageServiceMockGetUserMarkDown(
+  function messageServiceMockGetUserMarkdown(
     user: { username: string; firstName: string; id: number },
     userMarkdown: string,
   ): void {
@@ -159,7 +155,7 @@ describe('Scheduler', () => {
       .verifiable(Times.once());
   }
 
-  function databaseServiceMockGetUserMarkdown(userId: number, balance: number): void {
+  function databaseServiceMockGetUserBalance(userId: number, balance: number): void {
     databaseServiceMock
       .setup((x: IDatabaseService) => x.getUserBalance(userId))
       .returns(async () => balance)
@@ -182,24 +178,16 @@ describe('Scheduler', () => {
       .verifiable(Times.once());
   }
 
-  function messageServiceMockGetReplyMarkup(isFree: boolean, replyMarkup: string): void {
+  function messageServiceMockGetReplyMarkup(isFree: boolean, replyMarkup: any): void {
     messageServiceMock
       .setup((x: IMessageService) => x.getReplyMarkup(isFree))
-      .returns(() => (replyMarkup as unknown) as IReplyMarkup)
+      .returns(() => replyMarkup as IReplyMarkup)
       .verifiable(Times.once());
   }
 
-  function telegramServiceMockSendMessage({
-    text,
-    replyMarkup,
-    chatUsername,
-  }: {
-    text: string;
-    replyMarkup: string;
-    chatUsername: string;
-  }): void {
+  function telegramServiceMockSendMessage(parameters: { text: string; replyMarkup: string; chatId: string }): void {
     telegramServiceMock
-      .setup((x: ITelegramService) => x.sendMessage({ text, replyMarkup, chatId: chatUsername }))
+      .setup((x: ITelegramService) => x.sendMessage(parameters))
       .returns(async () => undefined)
       .verifiable(Times.once());
   }

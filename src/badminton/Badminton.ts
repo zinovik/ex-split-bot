@@ -47,7 +47,7 @@ export class Badminton implements IBadminton {
   }
 
   private async processGroupMessage(messageBody: IMessageBody): Promise<void> {
-    const { chatUsername: allowedChatUsername } = this.configurationService.getConfiguration();
+    const { chatUsername: allowedChatUsername, gameCost } = this.configurationService.getConfiguration();
 
     const {
       message: {
@@ -76,25 +76,36 @@ export class Badminton implements IBadminton {
     }
 
     await this.databaseService.upsertUser({ id: userId, username, firstName, lastName });
-    await this.createGameAndSendMessage({ userId, messageChatUsername, username, firstName });
-  }
-
-  private async createGameAndSendMessage({
-    userId,
-    messageChatUsername,
-    username,
-    firstName,
-  }: {
-    userId: number;
-    messageChatUsername: string;
-    username?: string;
-    firstName?: string;
-  }): Promise<void> {
-    const { gameCost } = this.configurationService.getConfiguration();
 
     const gameId = await this.databaseService.createGame(gameCost, userId);
-    const userMarkdown = this.messageService.getUserMarkdown({ username, firstName, id: userId });
     const userBalance = await this.databaseService.getUserBalance(userId);
+
+    await this.createGameMessage({
+      gameId,
+      userId,
+      username,
+      firstName,
+      userBalance,
+      messageChatUsername,
+    });
+  }
+
+  private async createGameMessage({
+    gameId,
+    userId,
+    username,
+    firstName,
+    userBalance,
+    messageChatUsername,
+  }: {
+    gameId: number;
+    userId: number;
+    username?: string;
+    firstName?: string;
+    userBalance: number;
+    messageChatUsername: string;
+  }): Promise<void> {
+    const userMarkdown = this.messageService.getUserMarkdown({ username, firstName, id: userId });
 
     const text = this.messageService.getGameMessageText({
       gameId,
