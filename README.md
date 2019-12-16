@@ -31,6 +31,7 @@ curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://badmint
 
 ```bash
 curl localhost:9000/index
+curl localhost:9000/users
 curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://<NGROK ID>.ngrok.io/index?token=<TOKEN>
 ~/ngrok http 9000
 ```
