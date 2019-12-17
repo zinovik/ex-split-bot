@@ -40,42 +40,36 @@ export class PostgresService implements IDatabaseService {
   }
 
   async getUserBalance(userId: number): Promise<number> {
-    const users = await this.connection.query(
-      `
-      SELECT "balance"
-      FROM "user"
-      WHERE "user"."id" = $1
-    `,
-      [userId],
-    );
+    const user = await this.connection
+      .getRepository(User)
+      .createQueryBuilder('user')
+      .select(['user.balance'])
+      .where({ id: userId })
+      .getOne();
 
-    if (users.length) {
-      return users[0].balance || 0;
+    if (user) {
+      return user.balance;
     }
 
     return 0;
   }
 
   async setUserBalance(userId: number, balance: number): Promise<void> {
-    await this.connection.query(
-      `
-      UPDATE "user"
-      SET "balance" = $2
-      WHERE "user"."id" = $1
-    `,
-      [userId, balance],
-    );
+    await this.connection.getRepository(User).update(userId, { balance: balance });
   }
 
   async createGame(price: number, userId: number): Promise<number> {
-    const [{ id: gameId }] = await this.connection.query(
-      `
-      INSERT INTO "game" ("price", "is_free", "is_done", "is_deleted", "created_by", "pay_by")
-      VALUES ($1, $2, $2, $2, $3, $3)
-      RETURNING "id"
-    `,
-      [price, false, userId],
-    );
+    const a = await this.connection.getRepository(Game).insert({
+      price,
+      isFree: false,
+      isDone: false,
+      isDeleted: false,
+      createdBy: { id: userId },
+      payBy: { id: userId },
+      playUsers: [{ id: userId }],
+    });
+
+    const gameId = a.identifiers[0].id;
 
     await this.addPlayUser(gameId, userId);
 
@@ -83,54 +77,36 @@ export class PostgresService implements IDatabaseService {
   }
 
   async getGame(gameId: number): Promise<Game> {
-    const [selectedGame] = await this.connection.query(
-      `
-      SELECT "game"."id", "price", "is_free" as "isFree", "is_done" as "isDone", "is_deleted" as "isDeleted",
-             "created_by"."id" as "createdBy.id",
-             "created_by"."username" as "createdBy.username",
-             "created_by"."first_name" as "createdBy.firstName",
-             "created_by"."last_name" as "createdBy.lastName",
-             "pay_by"."id" as "payBy.id",
-             "pay_by"."username" as "payBy.username",
-             "pay_by"."first_name" as "payBy.firstName",
-             "pay_by"."last_name" as "payBy.lastName"
-      FROM "game"
-      LEFT JOIN "user" "created_by" on "game"."created_by" = "created_by"."id"
-      LEFT JOIN "user" "pay_by" on "game"."pay_by" = "pay_by"."id"
-      WHERE "game"."id" = $1
-    `,
-      [gameId],
-    );
+    const game = await this.connection
+      .getRepository(Game)
+      .createQueryBuilder('game')
+      .select([
+        'game.id',
+        'game.price',
+        'game.isFree',
+        'game.isDone',
+        'game.isDeleted',
+        'createdBy.id',
+        'createdBy.username',
+        'createdBy.firstName',
+        'createdBy.lastName',
+        'payBy.id',
+        'payBy.username',
+        'payBy.firstName',
+        'payBy.lastName',
+        'playUsers.id',
+        'playUsers.balance',
+        'playUsers.username',
+        'playUsers.firstName',
+        'playUsers.lastName',
+      ])
+      .leftJoin('game.createdBy', 'createdBy')
+      .leftJoin('game.payBy', 'payBy')
+      .leftJoin('game.playUsers', 'playUsers')
+      .where({ id: gameId })
+      .getOne();
 
-    const playUsers = await this.connection.query(
-      `
-      SELECT "id", "balance", "username", "first_name" as "firstName", "last_name" as "lastName"
-      FROM "user"
-      where "user"."id" IN (SELECT "userId"
-                            FROM "play"
-                            WHERE "play"."gameId" = $1)
-    `,
-      [gameId],
-    );
-
-    const game = {
-      ...selectedGame,
-      playUsers,
-      createdBy: {
-        id: selectedGame['createdBy.id'],
-        username: selectedGame['createdBy.username'],
-        firstName: selectedGame['createdBy.firstName'],
-        lastName: selectedGame['createdBy.lastName'],
-      },
-      payBy: selectedGame['payBy.id'] && {
-        id: selectedGame['payBy.id'],
-        username: selectedGame['payBy.username'],
-        firstName: selectedGame['payBy.firstName'],
-        lastName: selectedGame['payBy.lastName'],
-      },
-    };
-
-    return game;
+    return game as Game;
   }
 
   async addPlayUser(gameId: number, userId: number): Promise<void> {
@@ -154,91 +130,42 @@ export class PostgresService implements IDatabaseService {
   }
 
   async updatePayBy(gameId: number, userId: number | null): Promise<void> {
-    await this.connection.query(
-      `
-      UPDATE "game"
-      SET "pay_by" = $2
-      WHERE "game"."id" = $1
-    `,
-      [gameId, userId],
-    );
+    await this.connection.getRepository(Game).update(gameId, { payBy: { id: userId } as User });
   }
 
   async freeGame(gameId: number): Promise<void> {
-    await this.connection.query(
-      `
-      UPDATE "game"
-      SET "is_free" = $2, "pay_by" = $3
-      WHERE "game"."id" = $1
-    `,
-      [gameId, true, null],
-    );
+    await this.connection.getRepository(Game).update(gameId, { isFree: true, payBy: null });
   }
 
   async notFreeGame(gameId: number): Promise<void> {
-    await this.connection.query(
-      `
-      UPDATE "game"
-      SET "is_free" = $2
-      WHERE "game"."id" = $1
-    `,
-      [gameId, false],
-    );
+    await this.connection.getRepository(Game).update(gameId, { isFree: false });
   }
 
   async doneGame(gameId: number): Promise<void> {
-    await this.connection.query(
-      `
-      UPDATE "game"
-      SET "is_done" = $2
-      WHERE "game"."id" = $1
-    `,
-      [gameId, true],
-    );
+    await this.connection.getRepository(Game).update(gameId, { isDone: true });
   }
 
   async undoneGame(gameId: number): Promise<void> {
-    await this.connection.query(
-      `
-      UPDATE "game"
-      SET "is_done" = $2
-      WHERE "game"."id" = $1
-    `,
-      [gameId, false],
-    );
+    await this.connection.getRepository(Game).update(gameId, { isDone: false });
   }
 
   async deleteGame(gameId: number): Promise<void> {
-    await this.connection.query(
-      `
-      UPDATE "game"
-      SET "is_deleted" = $2
-      WHERE "game"."id" = $1
-    `,
-      [gameId, true],
-    );
+    await this.connection.getRepository(Game).update(gameId, { isDeleted: true });
   }
 
   async restoreGame(gameId: number): Promise<void> {
-    await this.connection.query(
-      `
-      UPDATE "game"
-      SET "is_deleted" = $2
-      WHERE "game"."id" = $1
-    `,
-      [gameId, false],
-    );
+    await this.connection.getRepository(Game).update(gameId, { isDeleted: false });
   }
 
   async getUsers(): Promise<User[]> {
     await this.createConnection();
 
-    const users = await this.connection.query(
-      `
-      SELECT "balance", "username", "first_name" as "firstName", "last_name" as "lastName"
-      FROM "user"
-    `,
-    );
+    const users = await this.connection
+      .getRepository(User)
+      .createQueryBuilder('user')
+      .select(['user.balance', 'user.username', 'user.firstName', 'user.lastName'])
+      .orderBy('user.balance', 'DESC')
+      .getMany();
 
     await this.closeConnection();
 

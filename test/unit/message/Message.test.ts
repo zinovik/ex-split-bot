@@ -1,6 +1,3 @@
-import 'core-js/stable';
-import 'regenerator-runtime/runtime';
-
 import { MessageService } from '../../../src/message/Message.service';
 
 describe('Message', () => {

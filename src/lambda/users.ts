@@ -1,6 +1,3 @@
-import 'core-js/stable';
-import 'regenerator-runtime/runtime';
-
 import * as dotenv from 'dotenv';
 
 import { ConfigParameterNotDefinedError } from './error/ConfigParameterNotDefinedError';

@@ -1,6 +1,3 @@
-import 'core-js/stable';
-import 'regenerator-runtime/runtime';
-
 import { IMock, Mock, Times } from 'typemoq';
 
 import { Badminton } from '../../../src/badminton/Badminton';

@@ -165,37 +165,41 @@ export class Badminton implements IBadminton {
         await this.freeGame(game);
         break;
 
-      case 'done':
-        const doneFailMessage = await this.doneGame(game, userId, adminIds); // eslint-disable-line no-case-declarations
+      case 'done': {
+        const doneFailMessage = await this.doneGame(game, userId, adminIds);
         if (doneFailMessage) {
           await this.telegramService.answerCallback({ callbackQueryId, text: doneFailMessage });
           return;
         }
         break;
+      }
 
-      case 'delete':
-        const deleteFailMessage = await this.deleteGame(game, userId, adminIds); // eslint-disable-line no-case-declarations
+      case 'delete': {
+        const deleteFailMessage = await this.deleteGame(game, userId, adminIds);
         if (deleteFailMessage) {
           await this.telegramService.answerCallback({ callbackQueryId, text: deleteFailMessage });
           return;
         }
         break;
+      }
 
-      case 'restore':
-        const restoreFailMessage = await this.restoreGame(game, userId, adminIds); // eslint-disable-line no-case-declarations
+      case 'restore': {
+        const restoreFailMessage = await this.restoreGame(game, userId, adminIds);
         if (restoreFailMessage) {
           await this.telegramService.answerCallback({ callbackQueryId, text: restoreFailMessage });
           return;
         }
         break;
+      }
 
-      case 'edit':
-        const editFailMessage = await this.editGame(game, userId, adminIds); // eslint-disable-line no-case-declarations
+      case 'edit': {
+        const editFailMessage = await this.editGame(game, userId, adminIds);
         if (editFailMessage) {
           await this.telegramService.answerCallback({ callbackQueryId, text: editFailMessage });
           return;
         }
         break;
+      }
 
       default:
         return;
