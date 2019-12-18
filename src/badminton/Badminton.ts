@@ -8,6 +8,8 @@ import { IMessageBody } from '../common/model/IMessageBody.interface';
 import { ICallbackMessageBody } from '../common/model/ICallbackMessageBody.interface';
 import { Game } from '../database/entities/Game.entity';
 
+const NEW_GAME_REGEXP = '^game$|[0-9].*[?]';
+
 export class Badminton implements IBadminton {
   constructor(
     private readonly configurationService: IConfigurationService,
@@ -58,7 +60,7 @@ export class Badminton implements IBadminton {
     } = messageBody;
 
     if (!text) {
-      console.error('No text!');
+      console.error('No message text!');
       return;
     }
 
@@ -69,7 +71,7 @@ export class Badminton implements IBadminton {
 
     const messageText = text.trim().toLowerCase();
 
-    const playRegExp = new RegExp('^game$|[0-9].*[?]', 'gm');
+    const playRegExp = new RegExp(NEW_GAME_REGEXP, 'gm');
     if (!playRegExp.test(messageText)) {
       console.error('No keyword found!');
       return;
@@ -220,7 +222,7 @@ export class Badminton implements IBadminton {
 
   private async playGame(game: Game, userId: number): Promise<void> {
     if (game.isDeleted || game.isDone) {
-      throw new Error('You can not play deleted or done game');
+      throw new Error("You can't play deleted or done game");
     }
 
     if (game.playUsers.some(u => u.id === userId)) {
@@ -238,7 +240,7 @@ export class Badminton implements IBadminton {
 
   private async payGame(game: Game, userId: number): Promise<void> {
     if (game.isDeleted || game.isDone || game.isFree) {
-      throw new Error('You can not play deleted, done or free game');
+      throw new Error("You can't pay for the deleted, done or free game");
     }
 
     if (game.payBy && game.payBy.id === userId) {
@@ -256,7 +258,7 @@ export class Badminton implements IBadminton {
 
   private async freeGame(game: Game): Promise<void> {
     if (game.isDeleted || game.isDone) {
-      throw new Error('You can not free deleted or done game');
+      throw new Error("You can't set deleted or done game free");
     }
 
     if (game.isFree) {
@@ -271,15 +273,15 @@ export class Badminton implements IBadminton {
 
   private async doneGame(game: Game, userId: number, adminIds: number[]): Promise<string | void> {
     if (game.isDeleted || game.isDone) {
-      throw new Error('You can not done deleted or done game');
+      throw new Error("You can't finish deleted or done game");
     }
 
     if (!game.isFree && !game.payBy) {
-      return 'You can not done game if it is not free and nobody payed!';
+      return 'You can\'t finish a game if it is not free and nobody paid!';
     }
 
     if (game.createdBy.id !== userId && !adminIds.includes(userId)) {
-      return 'You can done only your own games!';
+      return 'You can finish only your own games!';
     }
 
     if (!game.isFree) {
@@ -298,7 +300,7 @@ export class Badminton implements IBadminton {
 
   private async deleteGame(game: Game, userId: number, adminIds: number[]): Promise<string | void> {
     if (game.isDeleted || game.isDone) {
-      throw new Error('You can not delete deleted or done game');
+      throw new Error("You can't delete deleted or done game");
     }
 
     if (game.createdBy.id !== userId && !adminIds.includes(userId)) {
@@ -310,11 +312,11 @@ export class Badminton implements IBadminton {
 
   private async restoreGame(game: Game, userId: number, adminIds: number[]): Promise<string | void> {
     if (!game.isDeleted || game.isDone) {
-      throw new Error('You can not restore not deleted or done game');
+      throw new Error("You can't restore not deleted or done game");
     }
 
     if (!adminIds.includes(userId)) {
-      return 'Only admin can do it!';
+      return 'Only admin can restore a game!';
     }
 
     await this.databaseService.restoreGame(game.id);
@@ -322,7 +324,7 @@ export class Badminton implements IBadminton {
 
   private async editGame(game: Game, userId: number, adminIds: number[]): Promise<string | void> {
     if (game.isDeleted || !game.isDone) {
-      throw new Error('You can not edit deleted or not done game');
+      throw new Error("You can't edit deleted or not done game");
     }
 
     if (!game.isDone) {
@@ -330,7 +332,7 @@ export class Badminton implements IBadminton {
     }
 
     if (!adminIds.includes(userId)) {
-      return 'Only admin can do it!';
+      return 'Only admin can edit a game';
     }
 
     if (!game.isFree) {
@@ -344,7 +346,7 @@ export class Badminton implements IBadminton {
       }
     }
 
-    await this.databaseService.undoneGame(game.id);
+    await this.databaseService.editGame(game.id);
   }
 
   private getGameBalances({
@@ -426,7 +428,7 @@ export class Badminton implements IBadminton {
 
       await this.telegramService.answerCallback({
         callbackQueryId,
-        text: game.isDeleted ? 'Game was successfully deleted!' : 'Game was successfully updated!',
+        text: game.isDeleted ? 'The game was successfully deleted!' : 'The game was successfully updated!',
       });
     } catch (error) {
       console.error('Error sending telegram message: ', error.message);

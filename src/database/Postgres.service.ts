@@ -145,7 +145,7 @@ export class PostgresService implements IDatabaseService {
     await this.connection.getRepository(Game).update(gameId, { isDone: true });
   }
 
-  async undoneGame(gameId: number): Promise<void> {
+  async editGame(gameId: number): Promise<void> {
     await this.connection.getRepository(Game).update(gameId, { isDone: false });
   }
 

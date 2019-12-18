@@ -9,7 +9,7 @@ import { IMessageService } from '../../../src/message/IMessageService.interface'
 import { IMessageBody } from '../../../src/common/model/IMessageBody.interface';
 import { IReplyMarkup } from '../../../src/common/model/IReplyMarkup.interface';
 
-describe('Scheduler', () => {
+describe('Badminton', () => {
   let configurationServiceMock: IMock<IConfigurationService>;
   let databaseServiceMock: IMock<IDatabaseService>;
   let telegramServiceMock: IMock<ITelegramService>;
@@ -94,7 +94,7 @@ describe('Scheduler', () => {
       },
       gameMessageText,
     );
-    messageServiceMockGetReplyMarkup(false, replyMarkup);
+    messageServiceMockGetReplyMarkup(false, (replyMarkup as unknown) as IReplyMarkup);
     telegramServiceMockSendMessage({
       replyMarkup: JSON.stringify(replyMarkup),
       text: gameMessageText,
@@ -175,10 +175,10 @@ describe('Scheduler', () => {
       .verifiable(Times.once());
   }
 
-  function messageServiceMockGetReplyMarkup(isFree: boolean, replyMarkup: any): void {
+  function messageServiceMockGetReplyMarkup(isFree: boolean, replyMarkup: IReplyMarkup): void {
     messageServiceMock
       .setup((x: IMessageService) => x.getReplyMarkup(isFree))
-      .returns(() => replyMarkup as IReplyMarkup)
+      .returns(() => replyMarkup)
       .verifiable(Times.once());
   }
 
