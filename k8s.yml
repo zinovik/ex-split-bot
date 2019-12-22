@@ -1,0 +1,123 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: badminton-brest-bot-configmap
+data:
+  chat_username: badmintonbrestdev
+  game_cost: '6'
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: badminton-brest-bot-secret
+data:
+  telegram_token: ''
+  token: ''
+  admin_ids: ''
+  database_url: ''
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - image: postgres:10.4
+          name: postgres
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: badminton-brest-bot
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              value: dbpass123
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: badminton-brest-bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: badminton-brest-bot
+  template:
+    metadata:
+      labels:
+        app: badminton-brest-bot
+    spec:
+      containers:
+        - image: zinovik/badminton-brest-bot
+          name: badminton-brest-bot
+          env:
+            - name: CHAT_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: badminton-brest-bot-configmap
+                  key: chat_username
+            - name: GAME_COST
+              valueFrom:
+                configMapKeyRef:
+                  name: badminton-brest-bot-configmap
+                  key: game_cost
+            - name: TELEGRAM_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: badminton-brest-bot-secret
+                  key: telegram_token
+            - name: TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: badminton-brest-bot-secret
+                  key: token
+            - name: ADMIN_IDS
+              valueFrom:
+                secretKeyRef:
+                  name: badminton-brest-bot-secret
+                  key: admin_ids
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: badminton-brest-bot-secret
+                  key: database_url
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  ports:
+    - port: 5432
+  selector:
+    app: postgres
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: badminton-brest-bot
+  annotations:
+    dev.okteto.com/auto-ingress: 'true'
+spec:
+  type: ClusterIP
+  ports:
+    - name: 'badminton-brest-bot'
+      port: 9000
+  selector:
+    app: badminton-brest-bot

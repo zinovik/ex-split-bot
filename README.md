@@ -55,3 +55,5 @@ curl localhost:9000/users
 ## 5. you can check how it works here
 
 https://badminton-brest-bot.netlify.com/.netlify/functions/users
+
+KUBECONFIG=~/Downloads/okteto-kube.config kubectl apply -f k8s.yml

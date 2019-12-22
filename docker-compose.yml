@@ -14,6 +14,7 @@ services:
     build: .
     volumes:
       - .:/app
+      - /app/dist/
       - /app/node_modules/
     ports:
       - 9000:9000
