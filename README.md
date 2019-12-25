@@ -57,6 +57,8 @@ curl localhost:9000/users
 Dev: https://badminton-brest-bot-zinovik.cloud.okteto.net/users
 Prod: https://badminton-brest-bot.netlify.com/.netlify/functions/users
 
+---
+
 ## 6. set kubernetes configuration for the okteto service
 
 KUBECONFIG=~/Downloads/okteto-kube.config kubectl apply -f k8s.yml
