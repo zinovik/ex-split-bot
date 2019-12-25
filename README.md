@@ -54,12 +54,17 @@ curl localhost:9000/users
 
 ## 5. you can check how it works here
 
-https://badminton-brest-bot.netlify.com/.netlify/functions/users
+Dev: https://badminton-brest-bot-zinovik.cloud.okteto.net/users
+Prod: https://badminton-brest-bot.netlify.com/.netlify/functions/users
 
-## 6. kubernetes configuration for the okteto service
+## 6. set kubernetes configuration for the okteto service
 
 KUBECONFIG=~/Downloads/okteto-kube.config kubectl apply -f k8s.yml
 
-## 7. connect okteto postgres
+## 7. connect to the kubernetes okteto postgres database
 
 KUBECONFIG=~/Downloads/okteto-kube.config kubectl port-forward deployment/postgres 9432:5432
+
+## 8. get application logs from the kubernetes okteto service
+
+KUBECONFIG=~/Downloads/okteto-kube.config kubectl logs deployment/badminton-brest-bot -f
