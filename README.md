@@ -59,3 +59,7 @@ https://badminton-brest-bot.netlify.com/.netlify/functions/users
 ## 6. kubernetes configuration for the okteto service
 
 KUBECONFIG=~/Downloads/okteto-kube.config kubectl apply -f k8s.yml
+
+## 7. connect okteto postgres
+
+KUBECONFIG=~/Downloads/okteto-kube.config kubectl port-forward deployment/postgres 9432:5432
