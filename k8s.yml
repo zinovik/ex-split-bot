@@ -19,6 +19,18 @@ data:
   database_url: ''
 
 ---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: postgres-persistent-volume-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -45,6 +57,13 @@ spec:
               value: postgres
             - name: POSTGRES_PASSWORD
               value: dbpass123
+          volumeMounts:
+            - mountPath: /mht/data
+              name: postgredb
+      volumes:
+        - name: postgredb
+          persistentVolumeClaim:
+            claimName: postgres-persistent-volume-claim
 
 ---
 apiVersion: apps/v1
