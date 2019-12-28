@@ -6,10 +6,27 @@ import { User } from './entities/User.entity';
 import { Game } from './entities/Game.entity';
 
 export class PostgresService implements IDatabaseService {
-  private connection: Connection;
+  private getConnectionPromise: Promise<Connection>;
 
   constructor(private readonly databaseUrl: string) {
     this.databaseUrl = databaseUrl;
+    const dbUrl = url.parse(databaseUrl);
+
+    if (!dbUrl.host || !dbUrl.auth || !dbUrl.path) {
+      throw new Error('Error parsing database config!');
+    }
+
+    this.getConnectionPromise = createConnection({
+      type: 'postgres',
+      host: dbUrl.host.split(':')[0],
+      port: Number(dbUrl.port),
+      username: dbUrl.auth.split(':')[0],
+      password: dbUrl.auth.split(':')[1],
+      database: dbUrl.path.split('/')[1],
+      entities: [User, Game],
+      synchronize: true,
+      logging: true,
+    });
   }
 
   async upsertUser({
@@ -23,11 +40,10 @@ export class PostgresService implements IDatabaseService {
     firstName?: string;
     lastName?: string;
   }): Promise<void> {
-    await this.createConnection();
-
     const balance = 0;
 
-    await this.connection.query(
+    const connection = await this.getConnectionPromise;
+    await connection.query(
       `
       INSERT INTO "user" ("id", "balance", "username", "first_name", "last_name")
       VALUES ($1, $2, $3, $4, $5)
@@ -40,7 +56,8 @@ export class PostgresService implements IDatabaseService {
   }
 
   async getUserBalance(userId: number): Promise<number> {
-    const user = await this.connection
+    const connection = await this.getConnectionPromise;
+    const user = await connection
       .getRepository(User)
       .createQueryBuilder('user')
       .select(['user.balance'])
@@ -55,11 +72,13 @@ export class PostgresService implements IDatabaseService {
   }
 
   async setUserBalance(userId: number, balance: number): Promise<void> {
-    await this.connection.getRepository(User).update(userId, { balance: balance });
+    const connection = await this.getConnectionPromise;
+    await connection.getRepository(User).update(userId, { balance: balance });
   }
 
   async createGame(price: number, userId: number): Promise<number> {
-    const a = await this.connection.getRepository(Game).insert({
+    const connection = await this.getConnectionPromise;
+    const a = await connection.getRepository(Game).insert({
       price,
       isFree: false,
       isDone: false,
@@ -77,7 +96,8 @@ export class PostgresService implements IDatabaseService {
   }
 
   async getGame(gameId: number): Promise<Game> {
-    const game = await this.connection
+    const connection = await this.getConnectionPromise;
+    const game = await connection
       .getRepository(Game)
       .createQueryBuilder('game')
       .select([
@@ -110,7 +130,8 @@ export class PostgresService implements IDatabaseService {
   }
 
   async addPlayUser(gameId: number, userId: number): Promise<void> {
-    await this.connection.query(
+    const connection = await this.getConnectionPromise;
+    await connection.query(
       `
       INSERT INTO "play" ("gameId", "userId")
       VALUES ($1, $2)
@@ -120,7 +141,8 @@ export class PostgresService implements IDatabaseService {
   }
 
   async removePlayUser(gameId: number, userId: number): Promise<void> {
-    await this.connection.query(
+    const connection = await this.getConnectionPromise;
+    await connection.query(
       `
       DELETE FROM "play"
       WHERE "gameId" = $1 AND "userId" = $2;
@@ -130,37 +152,43 @@ export class PostgresService implements IDatabaseService {
   }
 
   async updatePayBy(gameId: number, userId: number | null): Promise<void> {
-    await this.connection.getRepository(Game).update(gameId, { payBy: { id: userId } as User });
+    const connection = await this.getConnectionPromise;
+    await connection.getRepository(Game).update(gameId, { payBy: { id: userId } as User });
   }
 
   async freeGame(gameId: number): Promise<void> {
-    await this.connection.getRepository(Game).update(gameId, { isFree: true, payBy: null });
+    const connection = await this.getConnectionPromise;
+    await connection.getRepository(Game).update(gameId, { isFree: true, payBy: null });
   }
 
   async notFreeGame(gameId: number): Promise<void> {
-    await this.connection.getRepository(Game).update(gameId, { isFree: false });
+    const connection = await this.getConnectionPromise;
+    await connection.getRepository(Game).update(gameId, { isFree: false });
   }
 
   async doneGame(gameId: number): Promise<void> {
-    await this.connection.getRepository(Game).update(gameId, { isDone: true });
+    const connection = await this.getConnectionPromise;
+    await connection.getRepository(Game).update(gameId, { isDone: true });
   }
 
   async editGame(gameId: number): Promise<void> {
-    await this.connection.getRepository(Game).update(gameId, { isDone: false });
+    const connection = await this.getConnectionPromise;
+    await connection.getRepository(Game).update(gameId, { isDone: false });
   }
 
   async deleteGame(gameId: number): Promise<void> {
-    await this.connection.getRepository(Game).update(gameId, { isDeleted: true });
+    const connection = await this.getConnectionPromise;
+    await connection.getRepository(Game).update(gameId, { isDeleted: true });
   }
 
   async restoreGame(gameId: number): Promise<void> {
-    await this.connection.getRepository(Game).update(gameId, { isDeleted: false });
+    const connection = await this.getConnectionPromise;
+    await connection.getRepository(Game).update(gameId, { isDeleted: false });
   }
 
   async getUsers(): Promise<User[]> {
-    await this.createConnection();
-
-    const users = await this.connection
+    const connection = await this.getConnectionPromise;
+    const users = await connection
       .getRepository(User)
       .createQueryBuilder('user')
       .select(['user.balance', 'user.username', 'user.firstName', 'user.lastName'])
@@ -173,34 +201,7 @@ export class PostgresService implements IDatabaseService {
   }
 
   async closeConnection(): Promise<void> {
-    if (!this.connection) {
-      return;
-    }
-
-    await this.connection.close();
-  }
-
-  private async createConnection(): Promise<void> {
-    if (this.connection) {
-      return;
-    }
-
-    const dbUrl = url.parse(this.databaseUrl);
-
-    if (!dbUrl.host || !dbUrl.auth || !dbUrl.path) {
-      throw new Error('Error parsing database config!');
-    }
-
-    this.connection = await createConnection({
-      type: 'postgres',
-      host: dbUrl.host.split(':')[0],
-      port: Number(dbUrl.port),
-      username: dbUrl.auth.split(':')[0],
-      password: dbUrl.auth.split(':')[1],
-      database: dbUrl.path.split('/')[1],
-      entities: [User, Game],
-      synchronize: true,
-      logging: true,
-    });
+    const connection = await this.getConnectionPromise;
+    await connection.close();
   }
 }
