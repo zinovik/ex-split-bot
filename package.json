@@ -10,7 +10,7 @@
   "dependencies": {
     "axios": "^0.19.0",
     "dotenv": "^8.2.0",
-    "pg": "^7.15.1",
+    "pg": "^7.16.0",
     "typeorm": "^0.2.22"
   },
   "devDependencies": {
@@ -18,12 +18,12 @@
     "@babel/preset-typescript": "^7.7.7",
     "@types/aws-lambda": "^8.10.39",
     "@types/dotenv": "^8.2.0",
-    "@types/jest": "^24.0.24",
-    "@types/node": "^13.1.0",
+    "@types/jest": "^24.0.25",
+    "@types/node": "^13.1.1",
     "@typescript-eslint/eslint-plugin": "^2.13.0",
     "@typescript-eslint/parser": "^2.13.0",
     "eslint": "^6.8.0",
-    "eslint-config-prettier": "^6.7.0",
+    "eslint-config-prettier": "^6.9.0",
     "jest": "^24.9.0",
     "netlify-lambda": "^1.6.3",
     "prettier": "^1.19.1",
