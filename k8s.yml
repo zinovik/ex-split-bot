@@ -58,8 +58,10 @@ spec:
               value: postgres
             - name: POSTGRES_PASSWORD
               value: dbpass123
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/dbfiles"
           volumeMounts:
-            - mountPath: /mht/data
+            - mountPath: /var/lib/postgresql/data
               name: postgredb
       volumes:
         - name: postgredb
