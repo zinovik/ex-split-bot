@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>Badminton Brest Bot</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+
+  <body>
+    <h1>Badminton Brest Bot</h1>
+
+    <h2 style="color: green;">Lenders</h2>
+    <h2 id="lenders">Loading...</h2>
+
+    <h2 style="color: red;">Debtors</h2>
+    <h2 id="debtors">Loading...</h2>
+
+    <script>
+      (async () => {
+        const url = '/.netlify/functions/users';
+
+        const response = await fetch(url);
+        const { users } = await response.json();
+
+        const ulLenders = document.createElement('ul');
+        const ulDebtors = document.createElement('ul');
+
+        users.forEach(user => {
+          const balance = Number(user.balance);
+
+          if (!balance) {
+            return;
+          }
+
+          const username = user.firstName || user.username || '<unknown>';
+
+          const li = document.createElement('li');
+          const text = document.createTextNode(`${username}: ${balance} BYN`);
+
+          li.appendChild(text);
+
+          if (balance > 0) {
+            ulLenders.appendChild(li);
+          } else {
+            ulDebtors.insertBefore(li, ulDebtors.firstChild);
+          }
+        });
+
+        document.getElementById('lenders').firstChild.remove();
+        document.getElementById('debtors').firstChild.remove();
+
+        document.getElementById('lenders').appendChild(ulLenders);
+        document.getElementById('debtors').appendChild(ulDebtors);
+      })();
+    </script>
+  </body>
+</html>
