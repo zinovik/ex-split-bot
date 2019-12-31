@@ -1,5 +1,7 @@
 import * as http from 'http';
 import * as url from 'url';
+import * as fs from 'fs';
+import { promisify } from 'util';
 
 import * as indexFunction from './lambda/index';
 import * as usersFunction from './lambda/users';
@@ -23,7 +25,6 @@ const LAMBDA_FUNCTIONS: { [key: string]: ILambdaFunction } = {
 
 const server = http.createServer((req, res) => {
   res.statusCode = 200;
-  res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   let body = '';
@@ -39,10 +40,13 @@ const server = http.createServer((req, res) => {
 
     try {
       if (LAMBDA_FUNCTIONS[route]) {
+        res.setHeader('Content-Type', 'application/json');
         const result = await LAMBDA_FUNCTIONS[route].handler({ body, queryStringParameters });
         res.end(result.body);
       } else {
-        res.end('"Hello World"');
+        const indexBuffer = await promisify(fs.readFile)(`${process.cwd()}/public/index.html`);
+        const indexString = indexBuffer.toString().replace('/.netlify/functions/users', '/users');
+        res.end(indexString);
       }
     } catch (error) {
       res.end(`"${error.message}"`);
