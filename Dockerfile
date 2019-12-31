@@ -12,6 +12,7 @@ RUN npm install
 
 # Copy app source to work directory
 COPY src ./src
+COPY public ./public
 COPY tsconfig.json ./
 COPY .eslintrc ./
 
