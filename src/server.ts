@@ -5,7 +5,6 @@ import { promisify } from 'util';
 
 import * as indexFunction from './lambda/index';
 import * as usersFunction from './lambda/users';
-import * as testFunction from './lambda/test';
 
 const HOST = '0.0.0.0';
 const PORT = Number(process.env.PORT) || 9000;
