@@ -20,7 +20,6 @@ interface ILambdaFunction {
 const LAMBDA_FUNCTIONS: { [key: string]: ILambdaFunction } = {
   '/index': indexFunction as ILambdaFunction,
   '/users': usersFunction as ILambdaFunction,
-  '/test': testFunction as ILambdaFunction,
 };
 
 const server = http.createServer((req, res) => {

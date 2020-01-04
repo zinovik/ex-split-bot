@@ -38,7 +38,7 @@ export class MessageService implements IMessageService {
   }
 
   private getGameCreated(createdByUserMarkdown: string, isFree: boolean): string {
-    return `${createdByUserMarkdown} invites to play ${isFree ? 'for FREE ' : ''}today!`;
+    return `${createdByUserMarkdown} invites to play${isFree ? ' for FREE' : ''}!`;
   }
 
   private getBalancesBeforeGame(
