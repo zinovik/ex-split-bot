@@ -42,7 +42,6 @@ describe('Badminton', () => {
     // Arrange
     const chatUsername = 'test-chat-username';
     const gameCost = 9;
-    const adminIds = [111];
     const gameId = 11;
     const user = {
       id: 987,
@@ -72,11 +71,11 @@ describe('Badminton', () => {
           type: '',
         },
         date: 0,
-        text: 'game',
+        text: '1?',
       },
     };
     const gameMessageText = 'test-telegram-message-text';
-    configurationServiceMockgGetConfiguration({ chatUsername, gameCost, adminIds });
+    configurationServiceMockgGetConfiguration({ chatUsername, gameCost });
     databaseServiceMockUpsertUser(user);
     databaseServiceMockCreateGame({ gameCost, userId: user.id }, gameId);
     messageServiceMockGetUserMarkdown(
@@ -91,6 +90,7 @@ describe('Badminton', () => {
         playUsers: [{ username: user.username, firstName: user.firstName, id: user.id, balance }],
         payByUserMarkdown: userMarkdown,
         gameBalances: [{ userMarkdown, gameBalance: 0 }],
+        gameCost,
       },
       gameMessageText,
     );
@@ -109,11 +109,7 @@ describe('Badminton', () => {
     expect(true).toBeTruthy();
   });
 
-  function configurationServiceMockgGetConfiguration(configuration: {
-    chatUsername: string;
-    gameCost: number;
-    adminIds: number[];
-  }): void {
+  function configurationServiceMockgGetConfiguration(configuration: { chatUsername: string; gameCost: number }): void {
     configurationServiceMock
       .setup((x: IConfigurationService) => x.getConfiguration())
       .returns(() => configuration)
@@ -166,6 +162,7 @@ describe('Badminton', () => {
       playUsers: { username?: string; firstName?: string; id: number; balance: number }[];
       payByUserMarkdown: string;
       gameBalances: { userMarkdown: string; gameBalance: number }[];
+      gameCost?: number;
     },
     gameMessageText: string,
   ): void {

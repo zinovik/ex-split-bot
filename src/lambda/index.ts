@@ -28,9 +28,6 @@ exports.handler = async ({ body, queryStringParameters: { token } }: IEvent, con
   if (process.env.TOKEN === undefined) {
     throw new ConfigParameterNotDefinedError('TOKEN');
   }
-  if (process.env.ADMIN_IDS === undefined) {
-    throw new ConfigParameterNotDefinedError('ADMIN_IDS');
-  }
 
   if (token !== process.env.TOKEN) {
     return {
@@ -43,11 +40,7 @@ exports.handler = async ({ body, queryStringParameters: { token } }: IEvent, con
   }
 
   const badminton = new Badminton(
-    new ConfigurationService(
-      process.env.CHAT_USERNAME,
-      Number(process.env.GAME_COST),
-      process.env.ADMIN_IDS.split(',').map(adminId => Number(adminId)),
-    ),
+    new ConfigurationService(process.env.CHAT_USERNAME, Number(process.env.GAME_COST)),
     new PostgresService(process.env.DATABASE_URL),
     new TelegramService(process.env.TELEGRAM_TOKEN),
     new MessageService(),

@@ -12,6 +12,7 @@ export class MessageService implements IMessageService {
     playUsers,
     payByUserMarkdown,
     isFree = false,
+    gameCost = 0,
     gameBalances,
   }: {
     gameId: number;
@@ -19,15 +20,15 @@ export class MessageService implements IMessageService {
     playUsers: { username?: string; firstName?: string; id: number; balance: number }[];
     payByUserMarkdown: string;
     isFree?: boolean;
+    gameCost?: number;
     gameBalances: { userMarkdown: string; gameBalance: number }[];
   }): string {
     return (
       `${this.getGameNumber(gameId)}\n` +
       `\n` +
-      `${this.getGameCreated(createdByUserMarkdown, isFree)}\n` +
+      `${this.getGameCreated(createdByUserMarkdown, isFree, gameCost)}\n` +
       `\n` +
-      `${this.getBalancesBeforeGame(playUsers)}\n` +
-      `\n` +
+      (isFree ? '' : `${this.getBalancesBeforeGame(playUsers)}\n` + `\n`) +
       `${this.getPlayUsers(playUsers)}` +
       (isFree ? '' : `\n` + `${this.getPayUser(payByUserMarkdown)}\n` + `\n` + this.getGameBalances(gameBalances))
     );
@@ -37,8 +38,10 @@ export class MessageService implements IMessageService {
     return `Game #${gameId}`;
   }
 
-  private getGameCreated(createdByUserMarkdown: string, isFree: boolean): string {
-    return `${createdByUserMarkdown} invites to play${isFree ? ' for FREE' : ''}!`;
+  private getGameCreated(createdByUserMarkdown: string, isFree: boolean, gameCost: number): string {
+    return `${createdByUserMarkdown} invites to play${isFree ? ' for FREE' : ''}!${
+      isFree ? '' : `\nGame cost: ${gameCost} BYN`
+    }`;
   }
 
   private getBalancesBeforeGame(

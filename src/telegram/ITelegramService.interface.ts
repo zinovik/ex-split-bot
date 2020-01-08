@@ -22,4 +22,6 @@ export interface ITelegramService {
     text: string;
     replyMarkup: string;
   }): Promise<void>;
+
+  getChatAdministratorsIds(chatId: string | number): Promise<number[]>;
 }

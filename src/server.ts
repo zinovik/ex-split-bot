@@ -43,7 +43,7 @@ const server = http.createServer((req, res) => {
         res.end(result.body);
       } else {
         const indexBuffer = await promisify(fs.readFile)(`${process.cwd()}/public/index.html`);
-        const indexString = indexBuffer.toString().replace('/.netlify/functions/users', '/users');
+        const indexString = indexBuffer.toString().replace('/.netlify/functions', '');
         res.end(indexString);
       }
     } catch (error) {

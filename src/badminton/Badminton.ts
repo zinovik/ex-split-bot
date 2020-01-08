@@ -8,7 +8,7 @@ import { IMessageBody } from '../common/model/IMessageBody.interface';
 import { ICallbackMessageBody } from '../common/model/ICallbackMessageBody.interface';
 import { Game } from '../database/entities/Game.entity';
 
-const NEW_GAME_REGEXP = '^game$|[0-9].*[?]';
+const NEW_GAME_REGEXP = '[0-9].*[?]';
 
 export class Badminton implements IBadminton {
   constructor(
@@ -35,10 +35,16 @@ export class Badminton implements IBadminton {
       return;
     }
 
-    if (this.isCallbackMessage(message)) {
-      await this.processCallbackMessage(message as ICallbackMessageBody);
-    } else {
-      await this.processGroupMessage(message as IMessageBody);
+    try {
+      if (this.isCallbackMessage(message)) {
+        await this.processCallbackMessage(message as ICallbackMessageBody);
+      } else {
+        await this.processGroupMessage(message as IMessageBody);
+      }
+    } catch (error) {
+      await this.databaseService.closeConnection();
+
+      throw new Error(error);
     }
 
     await this.databaseService.closeConnection();
@@ -89,6 +95,7 @@ export class Badminton implements IBadminton {
       firstName,
       userBalance,
       messageChatUsername,
+      gameCost,
     });
   }
 
@@ -99,6 +106,7 @@ export class Badminton implements IBadminton {
     firstName,
     userBalance,
     messageChatUsername,
+    gameCost,
   }: {
     gameId: number;
     userId: number;
@@ -106,11 +114,13 @@ export class Badminton implements IBadminton {
     firstName?: string;
     userBalance: number;
     messageChatUsername: string;
+    gameCost: number;
   }): Promise<void> {
     const userMarkdown = this.messageService.getUserMarkdown({ username, firstName, id: userId });
 
     const text = this.messageService.getGameMessageText({
       gameId,
+      gameCost,
       createdByUserMarkdown: userMarkdown,
       playUsers: [{ username, firstName, id: userId, balance: userBalance }],
       payByUserMarkdown: userMarkdown,
@@ -132,8 +142,6 @@ export class Badminton implements IBadminton {
   }
 
   private async processCallbackMessage(messageParsed: ICallbackMessageBody): Promise<void> {
-    const { adminIds } = this.configurationService.getConfiguration();
-
     const {
       callback_query: {
         id: callbackQueryId,
@@ -168,7 +176,7 @@ export class Badminton implements IBadminton {
         break;
 
       case 'done': {
-        const doneFailMessage = await this.doneGame(game, userId, adminIds);
+        const doneFailMessage = await this.doneGame(game, userId, chatId);
         if (doneFailMessage) {
           await this.telegramService.answerCallback({ callbackQueryId, text: doneFailMessage });
           return;
@@ -177,7 +185,7 @@ export class Badminton implements IBadminton {
       }
 
       case 'delete': {
-        const deleteFailMessage = await this.deleteGame(game, userId, adminIds);
+        const deleteFailMessage = await this.deleteGame(game, userId, chatId);
         if (deleteFailMessage) {
           await this.telegramService.answerCallback({ callbackQueryId, text: deleteFailMessage });
           return;
@@ -186,7 +194,7 @@ export class Badminton implements IBadminton {
       }
 
       case 'restore': {
-        const restoreFailMessage = await this.restoreGame(game, userId, adminIds);
+        const restoreFailMessage = await this.restoreGame(game, userId, chatId);
         if (restoreFailMessage) {
           await this.telegramService.answerCallback({ callbackQueryId, text: restoreFailMessage });
           return;
@@ -195,7 +203,7 @@ export class Badminton implements IBadminton {
       }
 
       case 'edit': {
-        const editFailMessage = await this.editGame(game, userId, adminIds);
+        const editFailMessage = await this.editGame(game, userId, chatId);
         if (editFailMessage) {
           await this.telegramService.answerCallback({ callbackQueryId, text: editFailMessage });
           return;
@@ -271,7 +279,7 @@ export class Badminton implements IBadminton {
     await this.databaseService.updatePayBy(game.id, null);
   }
 
-  private async doneGame(game: Game, userId: number, adminIds: number[]): Promise<string | void> {
+  private async doneGame(game: Game, userId: number, chatId: number): Promise<string | void> {
     if (game.isDeleted || game.isDone) {
       throw new Error("You can't finish deleted or done game");
     }
@@ -280,8 +288,12 @@ export class Badminton implements IBadminton {
       return 'You can\'t finish a game if it is not free and nobody paid!';
     }
 
-    if (game.createdBy.id !== userId && !adminIds.includes(userId)) {
-      return 'You can finish only your own games!';
+    if (game.createdBy.id !== userId) {
+      const adminIds = await this.telegramService.getChatAdministratorsIds(chatId);
+
+      if (!adminIds.includes(userId)) {
+        return 'You can finish only your own games!';
+      }
     }
 
     if (!game.isFree) {
@@ -298,22 +310,28 @@ export class Badminton implements IBadminton {
     await this.databaseService.doneGame(game.id);
   }
 
-  private async deleteGame(game: Game, userId: number, adminIds: number[]): Promise<string | void> {
+  private async deleteGame(game: Game, userId: number, chatId: number): Promise<string | void> {
     if (game.isDeleted || game.isDone) {
       throw new Error("You can't delete deleted or done game");
     }
 
-    if (game.createdBy.id !== userId && !adminIds.includes(userId)) {
-      return 'You can delete only your own games!';
+    if (game.createdBy.id !== userId) {
+      const adminIds = await this.telegramService.getChatAdministratorsIds(chatId);
+
+      if (!adminIds.includes(userId)) {
+        return 'You can delete only your own games!';
+      }
     }
 
     await this.databaseService.deleteGame(game.id);
   }
 
-  private async restoreGame(game: Game, userId: number, adminIds: number[]): Promise<string | void> {
+  private async restoreGame(game: Game, userId: number, chatId: number): Promise<string | void> {
     if (!game.isDeleted || game.isDone) {
       throw new Error("You can't restore not deleted or done game");
     }
+
+    const adminIds = await this.telegramService.getChatAdministratorsIds(chatId);
 
     if (!adminIds.includes(userId)) {
       return 'Only admin can restore a game!';
@@ -322,7 +340,7 @@ export class Badminton implements IBadminton {
     await this.databaseService.restoreGame(game.id);
   }
 
-  private async editGame(game: Game, userId: number, adminIds: number[]): Promise<string | void> {
+  private async editGame(game: Game, userId: number, chatId: number): Promise<string | void> {
     if (game.isDeleted || !game.isDone) {
       throw new Error("You can't edit deleted or not done game");
     }
@@ -330,6 +348,8 @@ export class Badminton implements IBadminton {
     if (!game.isDone) {
       return 'You can edit only done game!';
     }
+
+    const adminIds = await this.telegramService.getChatAdministratorsIds(chatId);
 
     if (!adminIds.includes(userId)) {
       return 'Only admin can edit a game';
@@ -409,6 +429,7 @@ export class Badminton implements IBadminton {
           playUsers: game.playUsers,
           payByUserMarkdown: game.payBy ? this.messageService.getUserMarkdown(game.payBy) : '',
           isFree: game.isFree,
+          gameCost: game.price,
           gameBalances,
         });
 

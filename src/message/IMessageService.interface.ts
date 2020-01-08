@@ -9,6 +9,7 @@ export interface IMessageService {
     playUsers: { username?: string; firstName?: string; id: number; balance: number }[];
     payByUserMarkdown: string;
     isFree?: boolean;
+    gameCost?: number;
     gameBalances: { userMarkdown: string; gameBalance: number }[];
   }): string;
 

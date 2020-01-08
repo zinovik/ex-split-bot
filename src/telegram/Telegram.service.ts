@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 import { ITelegramService } from './ITelegramService.interface';
+import { IGetChatAdministratorsResult } from './IGetChatAdministratorsResult.interface';
 
 const TELEGRAM_API_URL = 'https://api.telegram.org/bot';
 
@@ -74,5 +75,25 @@ export class TelegramService implements ITelegramService {
     });
 
     console.log(`Telegram message was successfully edited: ${JSON.stringify(data)}`);
+  }
+
+  async getChatAdministratorsIds(chatId: string | number): Promise<number[]> {
+    const message = {
+      chat_id: chatId,
+    };
+
+    const { data }: { data: IGetChatAdministratorsResult } = await axios.post(
+      `${TELEGRAM_API_URL}${this.token}/getChatAdministrators`,
+      message,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    const chatAdministratorsIds = data.result.map(admin => admin.user.id);
+
+    return chatAdministratorsIds;
   }
 }

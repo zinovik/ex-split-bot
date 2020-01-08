@@ -15,7 +15,6 @@ metadata:
 data:
   telegram_token: ''
   token: ''
-  admin_ids: ''
   database_url: ''
 
 ---
@@ -107,11 +106,6 @@ spec:
                 secretKeyRef:
                   name: badminton-brest-bot-secret
                   key: token
-            - name: ADMIN_IDS
-              valueFrom:
-                secretKeyRef:
-                  name: badminton-brest-bot-secret
-                  key: admin_ids
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
