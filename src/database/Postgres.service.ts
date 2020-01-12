@@ -139,7 +139,7 @@ export class PostgresService implements IDatabaseService {
       .leftJoin('game.payBy', 'payBy')
       .leftJoin('game.playUsers', 'playUsers')
       .leftJoin('playUsers.balances', 'balances')
-      .leftJoin('balances.group', 'group', 'group.id = :chatId', { chatId })
+      .innerJoin('balances.group', 'group', 'group.id = :chatId', { chatId })
       .where({ id: gameId })
       .getOne();
 
