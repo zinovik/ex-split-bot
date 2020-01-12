@@ -130,7 +130,6 @@ export class PostgresService implements IDatabaseService {
         'payBy.firstName',
         'payBy.lastName',
         'playUsers.id',
-        'playUsers.balance',
         'playUsers.username',
         'playUsers.firstName',
         'playUsers.lastName',
