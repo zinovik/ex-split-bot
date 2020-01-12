@@ -210,14 +210,7 @@ export class PostgresService implements IDatabaseService {
     const users = await connection
       .getRepository(User)
       .createQueryBuilder('user')
-      .select([
-        'user.username',
-        'user.firstName',
-        'user.lastName',
-        'balances.amount',
-        'balances.group',
-        'group.username',
-      ])
+      .select(['user.username', 'user.firstName', 'user.lastName', 'balances.amount', 'group.username'])
       .leftJoin('user.balances', 'balances')
       .innerJoin('balances.group', 'group', 'group.username = :chatUsername', { chatUsername })
       .orderBy('balances.amount', 'DESC')

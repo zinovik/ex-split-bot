@@ -18,7 +18,9 @@
 
     <script>
       (async () => {
-        const url = '/.netlify/functions/users';
+        const parameters = window.location.search.substring(1);
+
+        const url = `/.netlify/functions/users?${parameters}`;
 
         const response = await fetch(url);
         const { users } = await response.json();
@@ -27,20 +29,18 @@
         const ulDebtors = document.createElement('ul');
 
         users.forEach(user => {
-          const balance = Number(user.balance);
-
-          if (!balance) {
+          if (!user.balance) {
             return;
           }
 
           const username = user.firstName || user.username || '<unknown>';
 
           const li = document.createElement('li');
-          const text = document.createTextNode(`${username}: ${balance} BYN`);
+          const text = document.createTextNode(`${username}: ${user.balance} BYN`);
 
           li.appendChild(text);
 
-          if (balance > 0) {
+          if (user.balance > 0) {
             ulLenders.appendChild(li);
           } else {
             ulDebtors.insertBefore(li, ulDebtors.firstChild);
