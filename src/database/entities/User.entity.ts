@@ -26,9 +26,6 @@ export class User extends DefaultNamingStrategy {
   @Column('text', { nullable: true })
   public username?: string;
 
-  @Column('decimal', { nullable: true })
-  public balance: number;
-
   @ManyToMany(
     type => Game,
     game => game.playUsers,
