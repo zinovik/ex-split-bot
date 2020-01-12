@@ -12,6 +12,7 @@ import {
 } from 'typeorm';
 
 import { User } from './User.entity';
+import { Group } from './Group.entity';
 
 @Entity('game')
 export class Game extends DefaultNamingStrategy {
@@ -58,4 +59,11 @@ export class Game extends DefaultNamingStrategy {
   )
   @JoinColumn({ name: 'created_by' })
   public createdBy: User;
+
+  @ManyToOne(
+    type => Group,
+    group => group.games,
+  )
+  @JoinColumn({ name: 'group' })
+  public group: Group;
 }

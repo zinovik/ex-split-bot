@@ -49,6 +49,7 @@ describe('Badminton', () => {
       lastName: 'test-last-name',
       username: 'test-username',
     };
+    const chatId = 789456123;
     const balance = 999;
     const userMarkdown = 'test-user-markdown';
     const replyMarkup = 'test-reply-markup';
@@ -65,7 +66,7 @@ describe('Badminton', () => {
           language_code: 'en',
         },
         chat: {
-          id: 0,
+          id: chatId,
           username: chatUsername,
           title: '',
           type: '',
@@ -76,13 +77,20 @@ describe('Badminton', () => {
     };
     const gameMessageText = 'test-telegram-message-text';
     configurationServiceMockgGetConfiguration({ chatUsername, gameCost });
-    databaseServiceMockUpsertUser(user);
-    databaseServiceMockCreateGame({ gameCost, userId: user.id }, gameId);
+    databaseServiceMockUpsertUser({
+      userId: user.id,
+      chatId,
+      userUsername: user.username,
+      chatUsername,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    });
+    databaseServiceMockCreateGame({ gameCost, userId: user.id, chatId }, gameId);
     messageServiceMockGetUserMarkdown(
       { username: user.username, firstName: user.firstName, id: user.id },
       userMarkdown,
     );
-    databaseServiceMockGetUserBalance(user.id, balance);
+    databaseServiceMockGetUserBalance({ userId: user.id, chatId }, balance);
     messageServiceMockGetGameMessageText(
       {
         gameId,
@@ -98,7 +106,7 @@ describe('Badminton', () => {
     telegramServiceMockSendMessage({
       replyMarkup: JSON.stringify(replyMarkup),
       text: gameMessageText,
-      chatId: `@${chatUsername}`,
+      chatId,
     });
     databaseServiceMockCloseConnection();
 
@@ -116,24 +124,26 @@ describe('Badminton', () => {
       .verifiable(Times.once());
   }
 
-  function databaseServiceMockUpsertUser(user: {
-    id: number;
-    username?: string;
+  function databaseServiceMockUpsertUser(parameters: {
+    userId: number;
+    chatId: number;
+    userUsername?: string;
+    chatUsername?: string;
     firstName?: string;
     lastName?: string;
   }): void {
     databaseServiceMock
-      .setup((x: IDatabaseService) => x.upsertUser(user))
+      .setup((x: IDatabaseService) => x.upsertUser(parameters))
       .returns(async () => undefined)
       .verifiable(Times.once());
   }
 
   function databaseServiceMockCreateGame(
-    { gameCost, userId }: { gameCost: number; userId: number },
+    { gameCost, userId, chatId }: { gameCost: number; userId: number; chatId: number },
     gameId: number,
   ): void {
     databaseServiceMock
-      .setup((x: IDatabaseService) => x.createGame(gameCost, userId))
+      .setup((x: IDatabaseService) => x.createGame(gameCost, userId, chatId))
       .returns(async () => gameId)
       .verifiable(Times.once());
   }
@@ -148,9 +158,12 @@ describe('Badminton', () => {
       .verifiable(Times.once());
   }
 
-  function databaseServiceMockGetUserBalance(userId: number, balance: number): void {
+  function databaseServiceMockGetUserBalance(
+    { userId, chatId }: { userId: number; chatId: number },
+    balance: number,
+  ): void {
     databaseServiceMock
-      .setup((x: IDatabaseService) => x.getUserBalance(userId))
+      .setup((x: IDatabaseService) => x.getUserBalance(userId, chatId))
       .returns(async () => balance)
       .verifiable(Times.once());
   }
@@ -179,7 +192,7 @@ describe('Badminton', () => {
       .verifiable(Times.once());
   }
 
-  function telegramServiceMockSendMessage(parameters: { text: string; replyMarkup: string; chatId: string }): void {
+  function telegramServiceMockSendMessage(parameters: { text: string; replyMarkup: string; chatId: number }): void {
     telegramServiceMock
       .setup((x: ITelegramService) => x.sendMessage(parameters))
       .returns(async () => undefined)

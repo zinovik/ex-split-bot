@@ -17,6 +17,7 @@ export interface ICallbackMessageBody {
       reply_markup: IReplyMarkup;
       chat: {
         id: number;
+        username?: string;
       };
     };
   };

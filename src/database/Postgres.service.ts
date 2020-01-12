@@ -4,6 +4,8 @@ import { createConnection, Connection } from 'typeorm';
 import { IDatabaseService } from './IDatabaseService.interface';
 import { User } from './entities/User.entity';
 import { Game } from './entities/Game.entity';
+import { Group } from './entities/Group.entity';
+import { Balance } from './entities/Balance.entity';
 
 export class PostgresService implements IDatabaseService {
   private getConnectionPromise: Promise<Connection>;
@@ -23,60 +25,72 @@ export class PostgresService implements IDatabaseService {
       username: dbUrl.auth.split(':')[0],
       password: dbUrl.auth.split(':')[1],
       database: dbUrl.path.split('/')[1],
-      entities: [User, Game],
+      entities: [User, Game, Group, Balance],
       synchronize: true,
       logging: true,
     });
   }
 
   async upsertUser({
-    id,
-    username,
+    userId,
+    chatId,
+    userUsername,
+    chatUsername,
     firstName,
     lastName,
   }: {
-    id: number;
-    username?: string;
+    userId: number;
+    chatId: number;
+    userUsername?: string;
+    chatUsername?: string;
     firstName?: string;
     lastName?: string;
   }): Promise<void> {
-    const balance = 0;
-
     const connection = await this.getConnectionPromise;
-    await connection.query(
-      `
-      INSERT INTO "user" ("id", "balance", "username", "first_name", "last_name")
-      VALUES ($1, $2, $3, $4, $5)
-      ON CONFLICT ("id") DO UPDATE
-      SET "username" = $3, "first_name" = $4, "last_name" = $5
-      WHERE "user"."id" = $1
-    `,
-      [id, balance, username, firstName, lastName],
-    );
+
+    const group = new Group();
+    group.id = String(chatId);
+    group.username = chatUsername;
+    await connection.getRepository(Group).save(group);
+
+    const user = new User();
+    user.id = userId;
+    user.username = userUsername;
+    user.firstName = firstName;
+    user.lastName = lastName;
+    await connection.getRepository(User).save(user);
+
+    const balance = new Balance();
+    balance.user = user;
+    balance.group = group;
+    await connection.getRepository(Balance).save(balance);
   }
 
-  async getUserBalance(userId: number): Promise<number> {
+  async getUserBalance(userId: number, chatId: number): Promise<number> {
     const connection = await this.getConnectionPromise;
-    const user = await connection
-      .getRepository(User)
-      .createQueryBuilder('user')
-      .select(['user.balance'])
-      .where({ id: userId })
+    const balance = await connection
+      .getRepository(Balance)
+      .createQueryBuilder('balance')
+      .select(['balance.amount'])
+      .where({ user: userId, group: chatId })
       .getOne();
 
-    if (user) {
-      return user.balance;
+    if (balance) {
+      return balance.amount;
     }
 
     return 0;
   }
 
-  async setUserBalance(userId: number, balance: number): Promise<void> {
+  async setUserBalance(userId: number, chatId: number, balance: number): Promise<void> {
     const connection = await this.getConnectionPromise;
-    await connection.getRepository(User).update(userId, { balance: balance });
+
+    await connection
+      .getRepository(Balance)
+      .update({ user: { id: userId }, group: { id: String(chatId) } }, { amount: balance });
   }
 
-  async createGame(price: number, userId: number): Promise<number> {
+  async createGame(price: number, userId: number, chatId: number): Promise<number> {
     const connection = await this.getConnectionPromise;
     const a = await connection.getRepository(Game).insert({
       price,
@@ -86,6 +100,7 @@ export class PostgresService implements IDatabaseService {
       createdBy: { id: userId },
       payBy: { id: userId },
       playUsers: [{ id: userId }],
+      group: { id: String(chatId) },
     });
 
     const gameId = a.identifiers[0].id;
@@ -95,7 +110,7 @@ export class PostgresService implements IDatabaseService {
     return gameId;
   }
 
-  async getGame(gameId: number): Promise<Game> {
+  async getGame(gameId: number, chatId: number): Promise<Game> {
     const connection = await this.getConnectionPromise;
     const game = await connection
       .getRepository(Game)
@@ -119,10 +134,13 @@ export class PostgresService implements IDatabaseService {
         'playUsers.username',
         'playUsers.firstName',
         'playUsers.lastName',
+        'balances.amount',
       ])
       .leftJoin('game.createdBy', 'createdBy')
       .leftJoin('game.payBy', 'payBy')
       .leftJoin('game.playUsers', 'playUsers')
+      .leftJoin('playUsers.balances', 'balances')
+      .leftJoin('balances.group', 'group', 'group.id = :chatId', { chatId })
       .where({ id: gameId })
       .getOne();
 
@@ -186,13 +204,23 @@ export class PostgresService implements IDatabaseService {
     await connection.getRepository(Game).update(gameId, { isDeleted: false });
   }
 
-  async getUsers(): Promise<User[]> {
+  async getUsers(chatUsername: string): Promise<User[]> {
     const connection = await this.getConnectionPromise;
+
     const users = await connection
       .getRepository(User)
       .createQueryBuilder('user')
-      .select(['user.balance', 'user.username', 'user.firstName', 'user.lastName'])
-      .orderBy('user.balance', 'DESC')
+      .select([
+        'user.username',
+        'user.firstName',
+        'user.lastName',
+        'balances.amount',
+        'balances.group',
+        'group.username',
+      ])
+      .leftJoin('user.balances', 'balances')
+      .innerJoin('balances.group', 'group', 'group.username = :chatUsername', { chatUsername })
+      .orderBy('balances.amount', 'DESC')
       .getMany();
 
     await this.closeConnection();

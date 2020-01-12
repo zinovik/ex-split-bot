@@ -22,18 +22,19 @@ describe('Api', () => {
   it('Should return users', async () => {
     // Arrange
     const initialUsers = [new User()];
-    databaseServiceMockGetUsers(initialUsers);
+    const chatUsername = 'test-chat-username';
+    databaseServiceMockGetUsers(chatUsername, initialUsers);
 
     // Act
-    const users = await api.getUsers();
+    const users = await api.getUsers(chatUsername);
 
     // Assert
     expect(users).toBe(initialUsers);
   });
 
-  function databaseServiceMockGetUsers(users: User[]): void {
+  function databaseServiceMockGetUsers(chatUsername: string, users: User[]): void {
     databaseServiceMock
-      .setup((x: IDatabaseService) => x.getUsers())
+      .setup((x: IDatabaseService) => x.getUsers(chatUsername))
       .returns(async () => users)
       .verifiable(Times.once());
   }

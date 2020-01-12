@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 
 import { Game } from './Game.entity';
+import { Balance } from './Balance.entity';
 
 @Entity('user')
 export class User extends DefaultNamingStrategy {
@@ -25,7 +26,7 @@ export class User extends DefaultNamingStrategy {
   @Column('text', { nullable: true })
   public username?: string;
 
-  @Column('decimal')
+  @Column('decimal', { nullable: true })
   public balance: number;
 
   @ManyToMany(
@@ -54,4 +55,11 @@ export class User extends DefaultNamingStrategy {
     { nullable: true },
   )
   public createdGames: Game[];
+
+  @OneToMany(
+    type => Balance,
+    balance => balance.user,
+    { nullable: true },
+  )
+  public balances: Balance[];
 }

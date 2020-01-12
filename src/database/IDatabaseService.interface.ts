@@ -2,14 +2,21 @@ import { Game } from './entities/Game.entity';
 import { User } from './entities/User.entity';
 
 export interface IDatabaseService {
-  upsertUser(user: { id: number; username?: string; firstName?: string; lastName?: string }): Promise<void>;
+  upsertUser(parameters: {
+    userId: number;
+    chatId: number;
+    userUsername?: string;
+    chatUsername?: string;
+    firstName?: string;
+    lastName?: string;
+  }): Promise<void>;
 
-  getUserBalance(userId: number): Promise<number>;
-  setUserBalance(userId: number, balance: number): Promise<void>;
+  getUserBalance(userId: number, chatId: number): Promise<number>;
+  setUserBalance(userId: number, chatId: number, balance: number): Promise<void>;
 
-  createGame(price: number, userId: number): Promise<number>;
+  createGame(price: number, userId: number, chatId: number): Promise<number>;
 
-  getGame(gameId: number): Promise<Game>;
+  getGame(gameId: number, chatId: number): Promise<Game>;
 
   addPlayUser(gameId: number, userId: number): Promise<void>;
   removePlayUser(gameId: number, userId: number): Promise<void>;
@@ -25,7 +32,7 @@ export interface IDatabaseService {
   deleteGame(gameId: number): Promise<void>;
   restoreGame(gameId: number): Promise<void>;
 
-  getUsers(): Promise<User[]>;
+  getUsers(chatUsername: string): Promise<User[]>;
 
   closeConnection(): Promise<void>;
 }

@@ -13,9 +13,6 @@ dotenv.config();
 exports.handler = async ({ body, queryStringParameters: { token } }: IEvent, context: never) => {
   console.log('New request');
 
-  if (process.env.CHAT_USERNAME === undefined) {
-    throw new ConfigParameterNotDefinedError('CHAT_USERNAME');
-  }
   if (process.env.TELEGRAM_TOKEN === undefined) {
     throw new ConfigParameterNotDefinedError('TELEGRAM_TOKEN');
   }
@@ -40,7 +37,7 @@ exports.handler = async ({ body, queryStringParameters: { token } }: IEvent, con
   }
 
   const badminton = new Badminton(
-    new ConfigurationService(process.env.CHAT_USERNAME, Number(process.env.GAME_COST)),
+    new ConfigurationService(Number(process.env.GAME_COST)),
     new PostgresService(process.env.DATABASE_URL),
     new TelegramService(process.env.TELEGRAM_TOKEN),
     new MessageService(),

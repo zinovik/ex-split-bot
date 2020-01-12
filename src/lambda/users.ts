@@ -17,18 +17,26 @@ exports.handler = async (event: IEvent, context: never) => {
 
   let users: User[] = [];
 
+  const chatUsername = event.queryStringParameters.group;
+
   try {
-    users = await api.getUsers();
+    users = chatUsername ? await api.getUsers(chatUsername) : [];
   } catch (error) {
     console.error('Unexpected error occurred: ', error.message);
   }
 
+  const body = {
+    result: 'success',
+    users: users.map(u => ({
+      ...u,
+      balance: u.balances[0] ? Number(u.balances[0].amount) : 0,
+      balances: undefined,
+    })),
+  };
+
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      result: 'success',
-      users,
-    }),
+    body: JSON.stringify(body),
   };
 };

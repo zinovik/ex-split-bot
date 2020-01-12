@@ -10,25 +10,26 @@
   "dependencies": {
     "axios": "^0.19.1",
     "dotenv": "^8.2.0",
-    "pg": "^7.17.0",
+    "pg": "^7.17.1",
     "typeorm": "^0.2.22"
   },
   "devDependencies": {
-    "@babel/plugin-proposal-decorators": "^7.7.4",
-    "@babel/preset-typescript": "^7.7.7",
+    "@babel/plugin-proposal-decorators": "^7.8.0",
+    "@babel/preset-typescript": "^7.8.0",
     "@types/aws-lambda": "^8.10.39",
     "@types/dotenv": "^8.2.0",
     "@types/jest": "^24.0.25",
-    "@types/node": "^13.1.4",
+    "@types/node": "^13.1.6",
     "@typescript-eslint/eslint-plugin": "^2.15.0",
     "@typescript-eslint/parser": "^2.15.0",
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.9.0",
     "jest": "^24.9.0",
     "netlify-lambda": "^1.6.3",
+    "nodemon": "^2.0.2",
     "prettier": "^1.19.1",
     "ts-jest": "^24.3.0",
-    "ts-node": "^8.5.4",
+    "ts-node": "^8.6.1",
     "typemoq": "^2.1.0",
     "typescript": "^3.7.4"
   },
@@ -39,7 +40,8 @@
     "lint": "eslint . --ext .ts",
     "test": "jest --config jestconfig.json --coverage",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "start:dev": "nodemon"
   },
   "repository": {
     "type": "git",

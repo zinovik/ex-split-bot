@@ -55,23 +55,18 @@ export class Badminton implements IBadminton {
   }
 
   private async processGroupMessage(messageBody: IMessageBody): Promise<void> {
-    const { chatUsername: allowedChatUsername, gameCost } = this.configurationService.getConfiguration();
+    const { gameCost } = this.configurationService.getConfiguration();
 
     const {
       message: {
         text,
-        chat: { username: messageChatUsername },
+        chat: { id: chatId, username: chatUsername },
         from: { first_name: firstName, last_name: lastName, username, id: userId },
       },
     } = messageBody;
 
     if (!text) {
       console.error('No message text!');
-      return;
-    }
-
-    if (messageChatUsername !== allowedChatUsername) {
-      console.error('Wrong channel!');
       return;
     }
 
@@ -83,10 +78,17 @@ export class Badminton implements IBadminton {
       return;
     }
 
-    await this.databaseService.upsertUser({ id: userId, username, firstName, lastName });
+    await this.databaseService.upsertUser({
+      userId,
+      chatId,
+      userUsername: username,
+      chatUsername,
+      firstName,
+      lastName,
+    });
 
-    const gameId = await this.databaseService.createGame(gameCost, userId);
-    const userBalance = await this.databaseService.getUserBalance(userId);
+    const gameId = await this.databaseService.createGame(gameCost, userId, chatId);
+    const userBalance = await this.databaseService.getUserBalance(userId, chatId);
 
     await this.createGameMessage({
       gameId,
@@ -94,7 +96,7 @@ export class Badminton implements IBadminton {
       username,
       firstName,
       userBalance,
-      messageChatUsername,
+      chatId,
       gameCost,
     });
   }
@@ -105,7 +107,7 @@ export class Badminton implements IBadminton {
     username,
     firstName,
     userBalance,
-    messageChatUsername,
+    chatId,
     gameCost,
   }: {
     gameId: number;
@@ -113,7 +115,7 @@ export class Badminton implements IBadminton {
     username?: string;
     firstName?: string;
     userBalance: number;
-    messageChatUsername: string;
+    chatId: number;
     gameCost: number;
   }): Promise<void> {
     const userMarkdown = this.messageService.getUserMarkdown({ username, firstName, id: userId });
@@ -133,7 +135,7 @@ export class Badminton implements IBadminton {
       await this.telegramService.sendMessage({
         replyMarkup: JSON.stringify(replyMarkup),
         text,
-        chatId: `@${messageChatUsername}`,
+        chatId,
       });
     } catch (error) {
       console.error('Error sending telegram message: ', error.message);
@@ -149,16 +151,23 @@ export class Badminton implements IBadminton {
         message: {
           text,
           message_id: messageId,
-          chat: { id: chatId },
+          chat: { id: chatId, username: chatUsername },
         },
         from: { username, id: userId, first_name: firstName, last_name: lastName },
       },
     } = messageParsed;
 
-    await this.databaseService.upsertUser({ id: userId, username, firstName, lastName });
+    await this.databaseService.upsertUser({
+      userId,
+      chatId,
+      userUsername: username,
+      chatUsername,
+      firstName,
+      lastName,
+    });
 
     const gameId = this.messageService.parseGameId(text);
-    const game = await this.databaseService.getGame(gameId);
+    const game = await this.databaseService.getGame(gameId, chatId);
 
     console.log(`Current game: ${JSON.stringify(game)}`);
 
@@ -215,7 +224,7 @@ export class Badminton implements IBadminton {
         return;
     }
 
-    const updatedGame = await this.databaseService.getGame(gameId);
+    const updatedGame = await this.databaseService.getGame(gameId, chatId);
 
     const gameBalances = this.getGameBalances(updatedGame);
 
@@ -302,7 +311,8 @@ export class Badminton implements IBadminton {
       for (let i = 0; i < game.playUsers.length; i++) {
         await this.databaseService.setUserBalance(
           game.playUsers[i].id,
-          Number(game.playUsers[i].balance) + gameBalances[i].gameBalance,
+          chatId,
+          Number(game.playUsers[i].balances[0].amount) + gameBalances[i].gameBalance,
         );
       }
     }
@@ -361,7 +371,8 @@ export class Badminton implements IBadminton {
       for (let i = 0; i < game.playUsers.length; i++) {
         await this.databaseService.setUserBalance(
           game.playUsers[i].id,
-          Number(game.playUsers[i].balance) - gameBalances[i].gameBalance,
+          chatId,
+          Number(game.playUsers[i].balances[0].amount) - gameBalances[i].gameBalance,
         );
       }
     }
@@ -380,11 +391,11 @@ export class Badminton implements IBadminton {
     price: number;
     payBy?: { id: number } | null;
   }): { id: number; userMarkdown: string; gameBalance: number }[] {
-    const gameCost = price / playUsers.length;
-
     if (isFree || !payBy) {
       return [];
     }
+
+    const gameCost = price / playUsers.length;
 
     const gameBalances = playUsers.map(u => {
       let userGameBalance = 0;
@@ -426,7 +437,7 @@ export class Badminton implements IBadminton {
       : this.messageService.getGameMessageText({
           gameId: game.id,
           createdByUserMarkdown: this.messageService.getUserMarkdown(game.createdBy),
-          playUsers: game.playUsers,
+          playUsers: game.playUsers.map(u => ({ ...u, balance: u.balances[0].amount })),
           payByUserMarkdown: game.payBy ? this.messageService.getUserMarkdown(game.payBy) : '',
           isFree: game.isFree,
           gameCost: game.price,

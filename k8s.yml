@@ -4,7 +4,6 @@ kind: ConfigMap
 metadata:
   name: badminton-brest-bot-configmap
 data:
-  chat_username: badmintonbrestdev
   game_cost: '6'
 
 ---
@@ -15,7 +14,7 @@ metadata:
 data:
   telegram_token: ''
   token: ''
-  database_url: ''
+  database_url: cG9zdGdyZXM6Ly9wb3N0Z3JlczpkYnBhc3MxMjNAcG9zdGdyZXM6NTQzMi9iYWRtaW50b24tYnJlc3QtYm90
 
 ---
 kind: PersistentVolumeClaim
@@ -86,11 +85,6 @@ spec:
         - image: zinovik/badminton-brest-bot
           name: badminton-brest-bot
           env:
-            - name: CHAT_USERNAME
-              valueFrom:
-                configMapKeyRef:
-                  name: badminton-brest-bot-configmap
-                  key: chat_username
             - name: GAME_COST
               valueFrom:
                 configMapKeyRef:
