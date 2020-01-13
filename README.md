@@ -10,8 +10,14 @@ You can use it as Netlify Lambda Functions or as Okteto Kubernetes service.
 
 ## you can check how it works here
 
-- Dev: https://ex-split-bot-zinovik.cloud.okteto.net
-- Prod: https://ex-split-bot.netlify.com
+Dev:
+
+- https://app-ex-split-dev-bot-zinovik.cloud.okteto.net?group=exsplitdev
+- https://app-ex-split-dev-bot-zinovik.cloud.okteto.net?group=exsplitdev2
+
+Prod:
+
+- https://app-ex-split-bot-zinovik.cloud.okteto.net?group=badmintonbrest
 
 ## how to setup the bot
 
@@ -34,7 +40,7 @@ curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://ex-spli
 Okteto:
 
 ```bash
-curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://ex-split-bot-zinovik.cloud.okteto.net/index?token=<TOKEN>
+curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://app-ex-split-bot-zinovik.cloud.okteto.net/index?token=<TOKEN>
 ```
 
 don't forget to add bot to the Telegram group and add set the administrator role
@@ -93,4 +99,4 @@ KUBECONFIG=~/Downloads/okteto-kube.config kubectl port-forward service/postgres 
 
 ### 2.4. get application logs from the Kubernetes Okteto service
 
-KUBECONFIG=~/Downloads/okteto-kube.config kubectl logs service/ex-split-bot -f
+KUBECONFIG=~/Downloads/okteto-kube.config kubectl logs service/app -f
