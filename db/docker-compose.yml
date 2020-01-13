@@ -1,4 +1,4 @@
-version: "3.4"
+version: '3.4'
 
 services:
   database_postgresql:
@@ -6,6 +6,6 @@ services:
     ports:
       - 9432:5432
     environment:
-      - POSTGRES_DB=badminton-brest-bot
+      - POSTGRES_DB=ex-split-bot
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=dbpass123

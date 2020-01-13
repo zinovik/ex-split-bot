@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: badminton-brest-bot-configmap
+  name: ex-split-bot-configmap
 data:
   game_cost: '6'
 
@@ -10,11 +10,11 @@ data:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: badminton-brest-bot-secret
+  name: ex-split-bot-secret
 data:
   telegram_token: ''
   token: ''
-  database_url: cG9zdGdyZXM6Ly9wb3N0Z3JlczpkYnBhc3MxMjNAcG9zdGdyZXM6NTQzMi9iYWRtaW50b24tYnJlc3QtYm90
+  database_url: cG9zdGdyZXM6Ly9wb3N0Z3JlczpkYnBhc3MxMjNAcG9zdGdyZXM6NTQzMi9leC1zcGxpdC1ib3Q=
 
 ---
 kind: PersistentVolumeClaim
@@ -51,7 +51,7 @@ spec:
             - containerPort: 5432
           env:
             - name: POSTGRES_DB
-              value: badminton-brest-bot
+              value: ex-split-bot
             - name: POSTGRES_USER
               value: postgres
             - name: POSTGRES_PASSWORD
@@ -70,40 +70,40 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: badminton-brest-bot
+  name: ex-split-bot
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: badminton-brest-bot
+      app: ex-split-bot
   template:
     metadata:
       labels:
-        app: badminton-brest-bot
+        app: ex-split-bot
     spec:
       containers:
-        - image: zinovik/badminton-brest-bot
-          name: badminton-brest-bot
+        - image: zinovik/ex-split-bot
+          name: ex-split-bot
           env:
             - name: GAME_COST
               valueFrom:
                 configMapKeyRef:
-                  name: badminton-brest-bot-configmap
+                  name: ex-split-bot-configmap
                   key: game_cost
             - name: TELEGRAM_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: badminton-brest-bot-secret
+                  name: ex-split-bot-secret
                   key: telegram_token
             - name: TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: badminton-brest-bot-secret
+                  name: ex-split-bot-secret
                   key: token
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: badminton-brest-bot-secret
+                  name: ex-split-bot-secret
                   key: database_url
 
 ---
@@ -122,13 +122,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: badminton-brest-bot
+  name: ex-split-bot
   annotations:
     dev.okteto.com/auto-ingress: 'true'
 spec:
   type: ClusterIP
   ports:
-    - name: 'badminton-brest-bot'
+    - name: 'ex-split-bot'
       port: 9000
   selector:
-    app: badminton-brest-bot
+    app: ex-split-bot

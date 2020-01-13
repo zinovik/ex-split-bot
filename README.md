@@ -1,8 +1,8 @@
-[![Build Status](https://travis-ci.org/zinovik/badminton-brest-bot.svg?branch=master)](https://travis-ci.org/zinovik/badminton-brest-bot)
+[![Build Status](https://travis-ci.org/zinovik/ex-split-bot.svg?branch=master)](https://travis-ci.org/zinovik/ex-split-bot)
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/b054f198-abad-43cb-8e9c-06251b61bb7d/deploy-status)](https://app.netlify.com/sites/badminton-brest-bot/deploys)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/b054f198-abad-43cb-8e9c-06251b61bb7d/deploy-status)](https://app.netlify.com/sites/ex-split-bot/deploys)
 
-# Badminton Brest Bot
+# ExSplitBot
 
 This bot works in a Telegram group. When someone invites others to play, the bot sends a message with buttons to determine who will play and who pays for the game. Then the bot counts users' balances.
 
@@ -10,8 +10,8 @@ You can use it as Netlify Lambda Functions or as Okteto Kubernetes service.
 
 ## you can check how it works here
 
-- Dev: https://badminton-brest-bot-zinovik.cloud.okteto.net
-- Prod: https://badminton-brest-bot.netlify.com
+- Dev: https://ex-split-bot-zinovik.cloud.okteto.net
+- Prod: https://ex-split-bot.netlify.com
 
 ## how to setup the bot
 
@@ -28,13 +28,13 @@ for the production
 Netlify:
 
 ```bash
-curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://badminton-brest-bot.netlify.com/.netlify/functions/index?token=<TOKEN>
+curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://ex-split-bot.netlify.com/.netlify/functions/index?token=<TOKEN>
 ```
 
 Okteto:
 
 ```bash
-curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://badminton-brest-bot-zinovik.cloud.okteto.net/index?token=<TOKEN>
+curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://ex-split-bot-zinovik.cloud.okteto.net/index?token=<TOKEN>
 ```
 
 don't forget to add bot to the Telegram group and add set the administrator role
@@ -93,4 +93,4 @@ KUBECONFIG=~/Downloads/okteto-kube.config kubectl port-forward service/postgres 
 
 ### 2.4. get application logs from the Kubernetes Okteto service
 
-KUBECONFIG=~/Downloads/okteto-kube.config kubectl logs service/badminton-brest-bot -f
+KUBECONFIG=~/Downloads/okteto-kube.config kubectl logs service/ex-split-bot -f

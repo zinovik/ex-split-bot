@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 
 import { ConfigParameterNotDefinedError } from './error/ConfigParameterNotDefinedError';
-import { Badminton } from '../badminton/Badminton';
+import { Main } from '../main/Main';
 import { ConfigurationService } from '../configuration/Configuration.service';
 import { PostgresService } from '../database/Postgres.service';
 import { TelegramService } from '../telegram/Telegram.service';
@@ -36,7 +36,7 @@ exports.handler = async ({ body, queryStringParameters: { token } }: IEvent, con
     };
   }
 
-  const badminton = new Badminton(
+  const main = new Main(
     new ConfigurationService(Number(process.env.GAME_COST)),
     new PostgresService(process.env.DATABASE_URL),
     new TelegramService(process.env.TELEGRAM_TOKEN),
@@ -44,7 +44,7 @@ exports.handler = async ({ body, queryStringParameters: { token } }: IEvent, con
   );
 
   try {
-    await badminton.processMessage(body);
+    await main.processMessage(body);
   } catch (error) {
     console.error('Unexpected error occurred: ', error.message);
   }

@@ -1,4 +1,4 @@
-import { IBadminton } from './IBadminton.interface';
+import { IMain } from './IMain.interface';
 import { IConfigurationService } from '../configuration/IConfigurationService.interface';
 import { IDatabaseService } from '../database/IDatabaseService.interface';
 import { ITelegramService } from '../telegram/ITelegramService.interface';
@@ -10,7 +10,7 @@ import { Game } from '../database/entities/Game.entity';
 
 const NEW_GAME_REGEXP = '[0-9].*[?]';
 
-export class Badminton implements IBadminton {
+export class Main implements IMain {
   constructor(
     private readonly configurationService: IConfigurationService,
     private readonly databaseService: IDatabaseService,

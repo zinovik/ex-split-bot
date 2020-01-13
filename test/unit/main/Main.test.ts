@@ -1,6 +1,6 @@
 import { IMock, Mock, Times } from 'typemoq';
 
-import { Badminton } from '../../../src/badminton/Badminton';
+import { Main } from '../../../src/main/Main';
 import { IConfigurationService } from '../../../src/configuration/IConfigurationService.interface';
 import { IDatabaseService } from '../../../src/database/IDatabaseService.interface';
 import { ITelegramService } from '../../../src/telegram/ITelegramService.interface';
@@ -9,13 +9,13 @@ import { IMessageService } from '../../../src/message/IMessageService.interface'
 import { IMessageBody } from '../../../src/common/model/IMessageBody.interface';
 import { IReplyMarkup } from '../../../src/common/model/IReplyMarkup.interface';
 
-describe('Badminton', () => {
+describe('Main', () => {
   let configurationServiceMock: IMock<IConfigurationService>;
   let databaseServiceMock: IMock<IDatabaseService>;
   let telegramServiceMock: IMock<ITelegramService>;
   let messageServiceMock: IMock<IMessageService>;
 
-  let badminton: Badminton;
+  let main: Main;
 
   beforeEach(() => {
     configurationServiceMock = Mock.ofType<IConfigurationService>();
@@ -23,7 +23,7 @@ describe('Badminton', () => {
     telegramServiceMock = Mock.ofType<ITelegramService>();
     messageServiceMock = Mock.ofType<IMessageService>();
 
-    badminton = new Badminton(
+    main = new Main(
       configurationServiceMock.object,
       databaseServiceMock.object,
       telegramServiceMock.object,
@@ -111,7 +111,7 @@ describe('Badminton', () => {
     databaseServiceMockCloseConnection();
 
     // Act
-    await badminton.processMessage(JSON.stringify(messageBody));
+    await main.processMessage(JSON.stringify(messageBody));
 
     // Assert
     expect(true).toBeTruthy();

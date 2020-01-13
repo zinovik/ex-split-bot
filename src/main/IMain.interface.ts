@@ -1,3 +1,3 @@
-export interface IBadminton {
+export interface IMain {
   processMessage(notParsedMessage: string): Promise<void>;
 }
