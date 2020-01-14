@@ -1,25 +1,46 @@
+import * as dotenv from 'dotenv';
 import * as http from 'http';
 import * as url from 'url';
 import * as fs from 'fs';
 import { promisify } from 'util';
 
-import * as indexFunction from './lambda/index';
-import * as usersFunction from './lambda/users';
+import { Main } from './main/Main';
+import { Api } from './api/Api';
+import { ConfigurationService } from './configuration/Configuration.service';
+import { PostgresService } from './database/Postgres.service';
+import { TelegramService } from './telegram/Telegram.service';
+import { MessageService } from './message/Message.service';
+import { ConfigParameterNotDefinedError } from './common/error/ConfigParameterNotDefinedError';
+import { User } from './database/entities/User.entity';
+
+dotenv.config();
+
+if (process.env.TELEGRAM_TOKEN === undefined) {
+  throw new ConfigParameterNotDefinedError('TELEGRAM_TOKEN');
+}
+if (process.env.DATABASE_URL === undefined) {
+  throw new ConfigParameterNotDefinedError('DATABASE_URL');
+}
+if (process.env.GAME_COST === undefined) {
+  throw new ConfigParameterNotDefinedError('GAME_COST');
+}
+if (process.env.TOKEN === undefined) {
+  throw new ConfigParameterNotDefinedError('TOKEN');
+}
 
 const HOST = '0.0.0.0';
 const PORT = Number(process.env.PORT) || 9000;
 
-interface ILambdaFunction {
-  handler: (parameters: {
-    body: any;
-    queryStringParameters: { [key: string]: string | string[] };
-  }) => Promise<{ body: string }>;
-}
+const postgresService = new PostgresService(process.env.DATABASE_URL);
 
-const LAMBDA_FUNCTIONS: { [key: string]: ILambdaFunction } = {
-  '/index': indexFunction as ILambdaFunction,
-  '/users': usersFunction as ILambdaFunction,
-};
+const main = new Main(
+  new ConfigurationService(Number(process.env.GAME_COST)),
+  postgresService,
+  new TelegramService(process.env.TELEGRAM_TOKEN),
+  new MessageService(),
+);
+
+const api = new Api(postgresService);
 
 const server = http.createServer((req, res) => {
   res.statusCode = 200;
@@ -37,10 +58,58 @@ const server = http.createServer((req, res) => {
     const queryStringParameters = url.parse(reqUrl, true).query;
 
     try {
-      if (LAMBDA_FUNCTIONS[route]) {
+      if (route === '/index') {
+        const { token } = queryStringParameters;
+
+        if (token !== process.env.TOKEN) {
+          res.setHeader('Content-Type', 'application/json');
+          res.end(
+            JSON.stringify({
+              statusCode: 401,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                result: 'wrong token',
+              }),
+            }),
+          );
+
+          return;
+        }
+
+        try {
+          await main.processMessage(body);
+        } catch (error) {
+          console.error('Unexpected error occurred: ', error.message);
+        }
+
         res.setHeader('Content-Type', 'application/json');
-        const result = await LAMBDA_FUNCTIONS[route].handler({ body, queryStringParameters });
-        res.end(result.body);
+        res.end(
+          JSON.stringify({
+            result: 'success',
+          }),
+        );
+      } else if (route === '/users') {
+        const { group } = queryStringParameters;
+
+        let users: User[] = [];
+
+        try {
+          users = group ? await api.getUsers(group as string) : [];
+        } catch (error) {
+          console.error('Unexpected error occurred: ', error.message);
+        }
+
+        const body = {
+          result: 'success',
+          users: users.map(u => ({
+            ...u,
+            balance: u.balances[0] ? Number(u.balances[0].amount) : 0,
+            balances: undefined,
+          })),
+        };
+
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify(body));
       } else {
         const indexBuffer = await promisify(fs.readFile)(`${process.cwd()}/public/index.html`);
         const indexString = indexBuffer.toString().replace('/.netlify/functions', '');

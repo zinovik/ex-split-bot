@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv';
 
-import { ConfigParameterNotDefinedError } from './error/ConfigParameterNotDefinedError';
+import { ConfigParameterNotDefinedError } from '../common/error/ConfigParameterNotDefinedError';
 import { Main } from '../main/Main';
 import { ConfigurationService } from '../configuration/Configuration.service';
 import { PostgresService } from '../database/Postgres.service';
@@ -36,9 +36,11 @@ exports.handler = async ({ body, queryStringParameters: { token } }: IEvent, con
     };
   }
 
+  const postgresService = new PostgresService(process.env.DATABASE_URL);
+
   const main = new Main(
     new ConfigurationService(Number(process.env.GAME_COST)),
-    new PostgresService(process.env.DATABASE_URL),
+    postgresService,
     new TelegramService(process.env.TELEGRAM_TOKEN),
     new MessageService(),
   );
@@ -47,6 +49,12 @@ exports.handler = async ({ body, queryStringParameters: { token } }: IEvent, con
     await main.processMessage(body);
   } catch (error) {
     console.error('Unexpected error occurred: ', error.message);
+  }
+
+  try {
+    await postgresService.closeConnection();
+  } catch (error) {
+    console.error('Error closing database connection: ', error.message);
   }
 
   return {

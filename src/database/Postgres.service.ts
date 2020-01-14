@@ -215,13 +215,12 @@ export class PostgresService implements IDatabaseService {
       .orderBy('balances.amount', 'DESC')
       .getMany();
 
-    await this.closeConnection();
-
     return users;
   }
 
   async closeConnection(): Promise<void> {
     const connection = await this.getConnectionPromise;
+
     await connection.close();
   }
 }

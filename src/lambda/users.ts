@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv';
 
-import { ConfigParameterNotDefinedError } from './error/ConfigParameterNotDefinedError';
+import { ConfigParameterNotDefinedError } from '../common/error/ConfigParameterNotDefinedError';
 import { Api } from '../api/Api';
 import { PostgresService } from '../database/Postgres.service';
 import { IEvent } from './model/IEvent.interface';
@@ -13,7 +13,9 @@ exports.handler = async (event: IEvent, context: never) => {
     throw new ConfigParameterNotDefinedError('DATABASE_URL');
   }
 
-  const api = new Api(new PostgresService(process.env.DATABASE_URL));
+  const postgresService = new PostgresService(process.env.DATABASE_URL);
+
+  const api = new Api(postgresService);
 
   let users: User[] = [];
 
@@ -23,6 +25,12 @@ exports.handler = async (event: IEvent, context: never) => {
     users = chatUsername ? await api.getUsers(chatUsername) : [];
   } catch (error) {
     console.error('Unexpected error occurred: ', error.message);
+  }
+
+  try {
+    await postgresService.closeConnection();
+  } catch (error) {
+    console.error('Error closing database connection: ', error.message);
   }
 
   const body = {

@@ -108,7 +108,6 @@ describe('Main', () => {
       text: gameMessageText,
       chatId,
     });
-    databaseServiceMockCloseConnection();
 
     // Act
     await main.processMessage(JSON.stringify(messageBody));
@@ -195,13 +194,6 @@ describe('Main', () => {
   function telegramServiceMockSendMessage(parameters: { text: string; replyMarkup: string; chatId: number }): void {
     telegramServiceMock
       .setup((x: ITelegramService) => x.sendMessage(parameters))
-      .returns(async () => undefined)
-      .verifiable(Times.once());
-  }
-
-  function databaseServiceMockCloseConnection(): void {
-    databaseServiceMock
-      .setup((x: IDatabaseService) => x.closeConnection())
       .returns(async () => undefined)
       .verifiable(Times.once());
   }

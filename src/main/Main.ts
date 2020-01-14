@@ -35,19 +35,11 @@ export class Main implements IMain {
       return;
     }
 
-    try {
-      if (this.isCallbackMessage(message)) {
-        await this.processCallbackMessage(message as ICallbackMessageBody);
-      } else {
-        await this.processGroupMessage(message as IMessageBody);
-      }
-    } catch (error) {
-      await this.databaseService.closeConnection();
-
-      throw new Error(error);
+    if (this.isCallbackMessage(message)) {
+      await this.processCallbackMessage(message as ICallbackMessageBody);
+    } else {
+      await this.processGroupMessage(message as IMessageBody);
     }
-
-    await this.databaseService.closeConnection();
   }
 
   private isCallbackMessage(message: IMessageBody | ICallbackMessageBody): boolean {
