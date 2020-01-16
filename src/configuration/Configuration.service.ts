@@ -1,11 +1,11 @@
 import { IConfigurationService } from './IConfigurationService.interface';
 
 export class ConfigurationService implements IConfigurationService {
-  constructor(private readonly gameCost: number) {
-    this.gameCost = gameCost;
+  constructor(private readonly defaultPrice: number) {
+    this.defaultPrice = defaultPrice;
   }
 
-  getConfiguration(): { gameCost: number } {
-    return { gameCost: this.gameCost };
+  getConfiguration(): { defaultPrice: number } {
+    return { defaultPrice: this.defaultPrice };
   }
 }

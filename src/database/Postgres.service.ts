@@ -101,6 +101,7 @@ export class PostgresService implements IDatabaseService {
       payBy: { id: userId },
       playUsers: [{ id: userId }],
       group: { id: String(chatId) },
+      messageId: 0,
     });
 
     const gameId = a.identifiers[0].id;

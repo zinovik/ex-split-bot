@@ -1,3 +1,3 @@
 export interface IConfigurationService {
-  getConfiguration(): { gameCost: number };
+  getConfiguration(): { defaultPrice: number };
 }

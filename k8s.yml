@@ -4,7 +4,7 @@ kind: ConfigMap
 metadata:
   name: ex-split-bot-configmap
 data:
-  game_cost: '6'
+  default_price: '6'
 
 ---
 apiVersion: v1
@@ -85,11 +85,11 @@ spec:
         - image: zinovik/ex-split-bot:stable
           name: ex-split-bot
           env:
-            - name: GAME_COST
+            - name: DEFAULT_PRICE
               valueFrom:
                 configMapKeyRef:
                   name: ex-split-bot-configmap
-                  key: game_cost
+                  key: default_price
             - name: TELEGRAM_TOKEN
               valueFrom:
                 secretKeyRef:

@@ -47,7 +47,7 @@ export class Main implements IMain {
   }
 
   private async processGroupMessage(messageBody: IMessageBody): Promise<void> {
-    const { gameCost } = this.configurationService.getConfiguration();
+    const { defaultPrice } = this.configurationService.getConfiguration();
 
     const {
       message: {
@@ -79,7 +79,7 @@ export class Main implements IMain {
       lastName,
     });
 
-    const gameId = await this.databaseService.createGame(gameCost, userId, chatId);
+    const gameId = await this.databaseService.createGame(defaultPrice, userId, chatId);
     const userBalance = await this.databaseService.getUserBalance(userId, chatId);
 
     await this.createGameMessage({
@@ -89,7 +89,7 @@ export class Main implements IMain {
       firstName,
       userBalance,
       chatId,
-      gameCost,
+      defaultPrice,
     });
   }
 
@@ -100,7 +100,7 @@ export class Main implements IMain {
     firstName,
     userBalance,
     chatId,
-    gameCost,
+    gamePrice,
   }: {
     gameId: number;
     userId: number;
@@ -108,13 +108,13 @@ export class Main implements IMain {
     firstName?: string;
     userBalance: number;
     chatId: number;
-    gameCost: number;
+    gamePrice: number;
   }): Promise<void> {
     const userMarkdown = this.messageService.getUserMarkdown({ username, firstName, id: userId });
 
     const text = this.messageService.getGameMessageText({
       gameId,
-      gameCost,
+      gamePrice,
       createdByUserMarkdown: userMarkdown,
       playUsers: [{ username, firstName, id: userId, balance: userBalance }],
       payByUserMarkdown: userMarkdown,
@@ -432,7 +432,7 @@ export class Main implements IMain {
           playUsers: game.playUsers.map(u => ({ ...u, balance: u.balances[0].amount })),
           payByUserMarkdown: game.payBy ? this.messageService.getUserMarkdown(game.payBy) : '',
           isFree: game.isFree,
-          gameCost: game.price,
+          gamePrice: game.price,
           gameBalances,
         });
 

@@ -19,14 +19,14 @@ exports.handler = async ({ body, queryStringParameters: { token } }: IEvent, con
   if (process.env.DATABASE_URL === undefined) {
     throw new ConfigParameterNotDefinedError('DATABASE_URL');
   }
-  if (process.env.GAME_COST === undefined) {
-    throw new ConfigParameterNotDefinedError('GAME_COST');
+  if (process.env.DEFAULT_PRICE === undefined) {
+    throw new ConfigParameterNotDefinedError('DEFAULT_PRICE');
   }
-  if (process.env.TOKEN === undefined) {
-    throw new ConfigParameterNotDefinedError('TOKEN');
+  if (process.env.APP_TOKEN === undefined) {
+    throw new ConfigParameterNotDefinedError('APP_TOKEN');
   }
 
-  if (token !== process.env.TOKEN) {
+  if (token !== process.env.APP_TOKEN) {
     return {
       statusCode: 401,
       headers: { 'Content-Type': 'application/json' },
@@ -39,7 +39,7 @@ exports.handler = async ({ body, queryStringParameters: { token } }: IEvent, con
   const postgresService = new PostgresService(process.env.DATABASE_URL);
 
   const main = new Main(
-    new ConfigurationService(Number(process.env.GAME_COST)),
+    new ConfigurationService(Number(process.env.DEFAULT_PRICE)),
     postgresService,
     new TelegramService(process.env.TELEGRAM_TOKEN),
     new MessageService(),
