@@ -12,8 +12,6 @@ You can use it as Okteto Kubernetes service or as Netlify Lambda Functions.
 
 ## you can check how it works here
 
-[I'm a relative reference to a repository file](../blob/master/LICENSE)
-
 Dev ([@ExSplitDevBot](https://t.me/exsplitdevbot)):
 
 - https://app-ex-split-dev-bot-zinovik.cloud.okteto.net?group=exsplitdev
