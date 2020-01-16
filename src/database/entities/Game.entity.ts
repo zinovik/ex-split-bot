@@ -53,6 +53,9 @@ export class Game extends DefaultNamingStrategy {
   @UpdateDateColumn({ name: 'updated_at' })
   public updatedAt: Date;
 
+  @Column('integer', { name: 'message_id', nullable: true })
+  public messageId: number;
+
   @ManyToOne(
     type => User,
     user => user.createdGames,

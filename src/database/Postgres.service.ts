@@ -110,6 +110,11 @@ export class PostgresService implements IDatabaseService {
     return gameId;
   }
 
+  async addGameMessageId(gameId: number, messageId: number): Promise<void> {
+    const connection = await this.getConnectionPromise;
+    await connection.getRepository(Game).update(gameId, { messageId });
+  }
+
   async getGame(gameId: number, chatId: number): Promise<Game> {
     const connection = await this.getConnectionPromise;
     const game = await connection

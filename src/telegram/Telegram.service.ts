@@ -2,6 +2,7 @@ import axios from 'axios';
 
 import { ITelegramService } from './ITelegramService.interface';
 import { IGetChatAdministratorsResult } from './IGetChatAdministratorsResult.interface';
+import { ISendMessageResult } from './ISendMessageResult.interface';
 
 const TELEGRAM_API_URL = 'https://api.telegram.org/bot';
 
@@ -18,7 +19,7 @@ export class TelegramService implements ITelegramService {
     text: string;
     replyMarkup: string;
     chatId: string | number;
-  }): Promise<void> {
+  }): Promise<number> {
     const message = {
       text,
       reply_markup: replyMarkup,
@@ -29,9 +30,14 @@ export class TelegramService implements ITelegramService {
 
     console.log(`Sending telegram message: ${JSON.stringify(message)}...`);
 
-    const { data } = await axios.post(`${TELEGRAM_API_URL}${this.token}/sendMessage`, message);
+    const { data }: { data: ISendMessageResult } = await axios.post(
+      `${TELEGRAM_API_URL}${this.token}/sendMessage`,
+      message,
+    );
 
     console.log(`Telegram message was successfully sent: ${JSON.stringify(data)}`);
+
+    return data.result.message_id;
   }
 
   async answerCallback({ callbackQueryId, text }: { callbackQueryId: string; text?: string }): Promise<void> {

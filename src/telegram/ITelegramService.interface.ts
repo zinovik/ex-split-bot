@@ -7,7 +7,7 @@ export interface ITelegramService {
     text: string;
     replyMarkup: string;
     chatId: string | number;
-  }): Promise<void>;
+  }): Promise<number>;
 
   answerCallback({ callbackQueryId, text }: { callbackQueryId: string; text?: string }): Promise<void>;
 

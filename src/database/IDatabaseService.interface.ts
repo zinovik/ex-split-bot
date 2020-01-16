@@ -15,6 +15,7 @@ export interface IDatabaseService {
   setUserBalance(userId: number, chatId: number, balance: number): Promise<void>;
 
   createGame(price: number, userId: number, chatId: number): Promise<number>;
+  addGameMessageId(gameId: number, messageId: number): Promise<void>;
 
   getGame(gameId: number, chatId: number): Promise<Game>;
 

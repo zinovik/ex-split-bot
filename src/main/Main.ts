@@ -124,11 +124,13 @@ export class Main implements IMain {
     const replyMarkup = this.messageService.getReplyMarkup(false);
 
     try {
-      await this.telegramService.sendMessage({
+      const messageId = await this.telegramService.sendMessage({
         replyMarkup: JSON.stringify(replyMarkup),
         text,
         chatId,
       });
+
+      await this.databaseService.addGameMessageId(gameId, messageId);
     } catch (error) {
       console.error('Error sending telegram message: ', error.message);
       console.error('Error sending telegram message: ', error.response.data.description);

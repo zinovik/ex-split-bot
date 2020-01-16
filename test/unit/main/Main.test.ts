@@ -76,6 +76,7 @@ describe('Main', () => {
       },
     };
     const gameMessageText = 'test-telegram-message-text';
+    const messageId = 555;
     configurationServiceMockgGetConfiguration({ chatUsername, gameCost });
     databaseServiceMockUpsertUser({
       userId: user.id,
@@ -103,11 +104,15 @@ describe('Main', () => {
       gameMessageText,
     );
     messageServiceMockGetReplyMarkup(false, (replyMarkup as unknown) as IReplyMarkup);
-    telegramServiceMockSendMessage({
-      replyMarkup: JSON.stringify(replyMarkup),
-      text: gameMessageText,
-      chatId,
-    });
+    telegramServiceMockSendMessage(
+      {
+        replyMarkup: JSON.stringify(replyMarkup),
+        text: gameMessageText,
+        chatId,
+      },
+      messageId,
+    );
+    databaseServiceMockAddGameMessageId({ gameId, messageId });
 
     // Act
     await main.processMessage(JSON.stringify(messageBody));
@@ -191,9 +196,19 @@ describe('Main', () => {
       .verifiable(Times.once());
   }
 
-  function telegramServiceMockSendMessage(parameters: { text: string; replyMarkup: string; chatId: number }): void {
+  function telegramServiceMockSendMessage(
+    parameters: { text: string; replyMarkup: string; chatId: number },
+    messageId: number,
+  ): void {
     telegramServiceMock
       .setup((x: ITelegramService) => x.sendMessage(parameters))
+      .returns(async () => messageId)
+      .verifiable(Times.once());
+  }
+
+  function databaseServiceMockAddGameMessageId({ gameId, messageId }: { gameId: number; messageId: number }): void {
+    databaseServiceMock
+      .setup((x: IDatabaseService) => x.addGameMessageId(gameId, messageId))
       .returns(async () => undefined)
       .verifiable(Times.once());
   }
