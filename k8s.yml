@@ -13,7 +13,7 @@ metadata:
   name: ex-split-bot-secret
 data:
   telegram_token: ''
-  token: ''
+  app_token: ''
   database_url: cG9zdGdyZXM6Ly9wb3N0Z3JlczpkYnBhc3MxMjNAcG9zdGdyZXM6NTQzMi9leC1zcGxpdC1ib3Q=
 
 ---
@@ -95,11 +95,11 @@ spec:
                 secretKeyRef:
                   name: ex-split-bot-secret
                   key: telegram_token
-            - name: TOKEN
+            - name: APP_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: ex-split-bot-secret
-                  key: token
+                  key: app_token
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
