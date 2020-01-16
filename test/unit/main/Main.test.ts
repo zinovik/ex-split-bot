@@ -41,7 +41,7 @@ describe('Main', () => {
   it('Should process message to create new game', async () => {
     // Arrange
     const chatUsername = 'test-chat-username';
-    const gameCost = 9;
+    const defaultPrice = 9;
     const gameId = 11;
     const user = {
       id: 987,
@@ -77,7 +77,7 @@ describe('Main', () => {
     };
     const gameMessageText = 'test-telegram-message-text';
     const messageId = 555;
-    configurationServiceMockgGetConfiguration({ chatUsername, gameCost });
+    configurationServiceMockgGetConfiguration({ defaultPrice });
     databaseServiceMockUpsertUser({
       userId: user.id,
       chatId,
@@ -86,7 +86,7 @@ describe('Main', () => {
       firstName: user.firstName,
       lastName: user.lastName,
     });
-    databaseServiceMockCreateGame({ gameCost, userId: user.id, chatId }, gameId);
+    databaseServiceMockCreateGame({ gamePrice: defaultPrice, userId: user.id, chatId }, gameId);
     messageServiceMockGetUserMarkdown(
       { username: user.username, firstName: user.firstName, id: user.id },
       userMarkdown,
@@ -99,7 +99,7 @@ describe('Main', () => {
         playUsers: [{ username: user.username, firstName: user.firstName, id: user.id, balance }],
         payByUserMarkdown: userMarkdown,
         gameBalances: [{ userMarkdown, gameBalance: 0 }],
-        gameCost,
+        gamePrice: defaultPrice,
       },
       gameMessageText,
     );
@@ -121,7 +121,7 @@ describe('Main', () => {
     expect(true).toBeTruthy();
   });
 
-  function configurationServiceMockgGetConfiguration(configuration: { chatUsername: string; gameCost: number }): void {
+  function configurationServiceMockgGetConfiguration(configuration: { defaultPrice: number }): void {
     configurationServiceMock
       .setup((x: IConfigurationService) => x.getConfiguration())
       .returns(() => configuration)
@@ -143,11 +143,11 @@ describe('Main', () => {
   }
 
   function databaseServiceMockCreateGame(
-    { gameCost, userId, chatId }: { gameCost: number; userId: number; chatId: number },
+    { gamePrice, userId, chatId }: { gamePrice: number; userId: number; chatId: number },
     gameId: number,
   ): void {
     databaseServiceMock
-      .setup((x: IDatabaseService) => x.createGame(gameCost, userId, chatId))
+      .setup((x: IDatabaseService) => x.createGame(gamePrice, userId, chatId))
       .returns(async () => gameId)
       .verifiable(Times.once());
   }
@@ -179,7 +179,7 @@ describe('Main', () => {
       playUsers: { username?: string; firstName?: string; id: number; balance: number }[];
       payByUserMarkdown: string;
       gameBalances: { userMarkdown: string; gameBalance: number }[];
-      gameCost?: number;
+      gamePrice?: number;
     },
     gameMessageText: string,
   ): void {

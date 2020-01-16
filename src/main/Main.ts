@@ -89,7 +89,7 @@ export class Main implements IMain {
       firstName,
       userBalance,
       chatId,
-      defaultPrice,
+      gamePrice: defaultPrice,
     });
   }
 
