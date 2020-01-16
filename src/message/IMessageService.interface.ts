@@ -15,8 +15,6 @@ export interface IMessageService {
 
   getDeletedGameMessageText(parameters: { gameId: number; createdByUserMarkdown: string }): string;
 
-  parseGameId(text: string): number;
-
   getReplyMarkup(isFree?: boolean): IReplyMarkup;
   getDoneGameReplyMarkup(): IReplyMarkup;
   getDeletedGameReplyMarkup(): IReplyMarkup;

@@ -12,7 +12,7 @@ export interface ICallbackMessageBody {
       username: string;
     };
     message: {
-      message_id: string;
+      message_id: number;
       text: string;
       reply_markup: IReplyMarkup;
       chat: {

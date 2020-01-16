@@ -44,18 +44,6 @@ describe('Message', () => {
     expect(userMarkdown).toBe(`[${String(id)}](tg://user?id=${String(id)})`);
   });
 
-  it('Should parse game id', async () => {
-    // Arrange
-    const initialGameId = 123;
-    const text = `Game #${String(initialGameId)}\nGame #456\nGame #789\n`;
-
-    // Act
-    const gameId = messageService.parseGameId(text);
-
-    // Assert
-    expect(gameId).toBe(initialGameId);
-  });
-
   it('Should return reply markup', async () => {
     // Arrange
     const initialReplyMarkup = {

@@ -143,7 +143,6 @@ export class Main implements IMain {
         id: callbackQueryId,
         data,
         message: {
-          text,
           message_id: messageId,
           chat: { id: chatId, username: chatUsername },
         },
@@ -160,8 +159,7 @@ export class Main implements IMain {
       lastName,
     });
 
-    const gameId = this.messageService.parseGameId(text);
-    const game = await this.databaseService.getGame(gameId, chatId);
+    const game = await this.databaseService.getGame(chatId, messageId);
 
     console.log(`Current game: ${JSON.stringify(game)}`);
 
@@ -218,7 +216,7 @@ export class Main implements IMain {
         return;
     }
 
-    const updatedGame = await this.databaseService.getGame(gameId, chatId);
+    const updatedGame = await this.databaseService.getGame(chatId, messageId);
 
     const gameBalances = this.getGameBalances(updatedGame);
 
@@ -419,7 +417,7 @@ export class Main implements IMain {
   }: {
     game: Game;
     chatId: number;
-    messageId: string;
+    messageId: number;
     callbackQueryId: string;
     gameBalances: { userMarkdown: string; gameBalance: number }[];
   }): Promise<string | void> {

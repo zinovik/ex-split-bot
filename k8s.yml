@@ -82,7 +82,7 @@ spec:
         app: ex-split-bot
     spec:
       containers:
-        - image: zinovik/ex-split-bot
+        - image: zinovik/ex-split-bot:stable
           name: ex-split-bot
           env:
             - name: GAME_COST

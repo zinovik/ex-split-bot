@@ -18,7 +18,7 @@ export interface ITelegramService {
     replyMarkup,
   }: {
     chatId: string | number;
-    messageId: string;
+    messageId: number;
     text: string;
     replyMarkup: string;
   }): Promise<void>;

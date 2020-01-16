@@ -2,20 +2,24 @@
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/b054f198-abad-43cb-8e9c-06251b61bb7d/deploy-status)](https://app.netlify.com/sites/ex-split-bot/deploys)
 
+![logo](./avatar/exsplitbot.jpg)
+
 # ExSplitBot
 
 This bot works in a Telegram group. When someone invites others to play, the bot sends a message with buttons to determine who will play and who pays for the game. Then the bot counts users' balances.
 
-You can use it as Netlify Lambda Functions or as Okteto Kubernetes service.
+You can use it as Okteto Kubernetes service or as Netlify Lambda Functions.
 
 ## you can check how it works here
 
-Dev:
+[I'm a relative reference to a repository file](../blob/master/LICENSE)
+
+Dev ([@ExSplitDevBot](https://t.me/exsplitdevbot)):
 
 - https://app-ex-split-dev-bot-zinovik.cloud.okteto.net?group=exsplitdev
 - https://app-ex-split-dev-bot-zinovik.cloud.okteto.net?group=exsplitdev2
 
-Prod:
+Prod ([@ExSplitBot](https://t.me/exsplitbot)):
 
 - https://app-ex-split-bot-zinovik.cloud.okteto.net?group=badmintonbrest
 
@@ -31,19 +35,19 @@ curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://<NGROK 
 
 for the production
 
-Netlify:
-
-```bash
-curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://ex-split-bot.netlify.com/.netlify/functions/index?token=<TOKEN>
-```
-
 Okteto:
 
 ```bash
 curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://app-ex-split-bot-zinovik.cloud.okteto.net/index?token=<TOKEN>
 ```
 
-don't forget to add bot to the Telegram group and add set the administrator role
+Netlify:
+
+```bash
+curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://ex-split-bot.netlify.com/.netlify/functions/index?token=<TOKEN>
+```
+
+don't forget to add bot to the Telegram group and add set the administrator role, and disable privacy mode
 
 ## 1. Working locally
 
@@ -64,16 +68,16 @@ cd db
 docker-compose up
 ```
 
-and then start the project as lambda functions:
+and then start the project as a server:
+
+```bash
+npm run start:dev
+```
+
+or as lambda functions:
 
 ```bash
 npm run start:lambda
-```
-
-or as a server:
-
-```bash
-npm run start
 ```
 
 ### 1.3. you can involve the functions locally

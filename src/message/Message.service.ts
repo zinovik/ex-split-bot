@@ -72,10 +72,6 @@ export class MessageService implements IMessageService {
     return `${this.getGameNumber(gameId)}\n` + `Game created by ${createdByUserMarkdown} was deleted :(`;
   }
 
-  parseGameId(text: string): number {
-    return Number(text.split('\n')[0].replace('Game #', ''));
-  }
-
   getReplyMarkup(isFree = false): IReplyMarkup {
     return {
       inline_keyboard: [

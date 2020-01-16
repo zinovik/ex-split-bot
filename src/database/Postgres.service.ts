@@ -115,7 +115,7 @@ export class PostgresService implements IDatabaseService {
     await connection.getRepository(Game).update(gameId, { messageId });
   }
 
-  async getGame(gameId: number, chatId: number): Promise<Game> {
+  async getGame(chatId: number, messageId: number): Promise<Game> {
     const connection = await this.getConnectionPromise;
     const game = await connection
       .getRepository(Game)
@@ -123,6 +123,7 @@ export class PostgresService implements IDatabaseService {
       .select([
         'game.id',
         'game.price',
+        'game.messageId',
         'game.isFree',
         'game.isDone',
         'game.isDeleted',
@@ -145,7 +146,7 @@ export class PostgresService implements IDatabaseService {
       .leftJoin('game.playUsers', 'playUsers')
       .leftJoin('playUsers.balances', 'balances')
       .innerJoin('balances.group', 'group', 'group.id = :chatId', { chatId })
-      .where({ id: gameId })
+      .where({ messageId })
       .getOne();
 
     return game as Game;
