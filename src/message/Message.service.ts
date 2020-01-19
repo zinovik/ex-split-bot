@@ -51,10 +51,11 @@ export class MessageService implements IMessageService {
 
   private getBalancesBeforeExpense(
     playUsers: { username?: string; firstName?: string; id: number; balance: number }[],
-    expense: string = DEFAULT_EXPENSE_NAME,
+    expense?: string,
   ): string {
     return (
-      `Balances before the ${expense}:` + `${playUsers.map(u => `\n${this.getUserMarkdown(u)}: ${u.balance} BYN`)}`
+      `Balances before the ${expense || DEFAULT_EXPENSE_NAME}:` +
+      `${playUsers.map(u => `\n${this.getUserMarkdown(u)}: ${u.balance} BYN`)}`
     );
   }
 
