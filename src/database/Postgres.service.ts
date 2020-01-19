@@ -90,10 +90,11 @@ export class PostgresService implements IDatabaseService {
       .update({ user: { id: userId }, group: { id: String(chatId) } }, { amount: balance });
   }
 
-  async createGame(price: number, userId: number, chatId: number): Promise<number> {
+  async createGame(price: number, userId: number, chatId: number, expense: string): Promise<number> {
     const connection = await this.getConnectionPromise;
     const a = await connection.getRepository(Game).insert({
       price,
+      expense,
       isFree: false,
       isDone: false,
       isDeleted: false,
@@ -128,6 +129,7 @@ export class PostgresService implements IDatabaseService {
         'game.isFree',
         'game.isDone',
         'game.isDeleted',
+        'game.expense',
         'createdBy.id',
         'createdBy.username',
         'createdBy.firstName',
@@ -146,8 +148,8 @@ export class PostgresService implements IDatabaseService {
       .leftJoin('game.payBy', 'payBy')
       .leftJoin('game.playUsers', 'playUsers')
       .leftJoin('playUsers.balances', 'balances')
-      .innerJoin('balances.group', 'group', 'group.id = :chatId', { chatId })
-      .where({ messageId })
+      .where({ messageId, group: { id: chatId } })
+      .andWhere('balances.group = :chatId OR balances.group is null', { chatId })
       .getOne();
 
     return game as Game;

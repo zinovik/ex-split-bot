@@ -58,6 +58,9 @@ export class Game extends DefaultNamingStrategy {
   @Column('integer', { name: 'message_id' })
   public messageId: number;
 
+  @Column('text', { nullable: true })
+  public expense?: string;
+
   @ManyToOne(
     type => User,
     user => user.createdGames,

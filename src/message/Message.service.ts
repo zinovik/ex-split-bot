@@ -1,12 +1,15 @@
 import { IMessageService } from './IMessageService.interface';
 import { IReplyMarkup } from '../common/model/IReplyMarkup.interface';
 
+const DEFAULT_EXPENSE_NAME = 'game';
+const DEFAULT_SPLIT_NAME = 'play';
+
 export class MessageService implements IMessageService {
   getUserMarkdown({ username, firstName, id }: { username?: string; firstName?: string; id: number }): string {
     return `[${firstName || username || String(id)}](tg://user?id=${String(id)})`;
   }
 
-  getGameMessageText({
+  getMessageText({
     gameId,
     createdByUserMarkdown,
     playUsers,
@@ -14,6 +17,7 @@ export class MessageService implements IMessageService {
     isFree = false,
     gamePrice = 0,
     gameBalances,
+    expense,
   }: {
     gameId: number;
     createdByUserMarkdown: string;
@@ -22,32 +26,36 @@ export class MessageService implements IMessageService {
     isFree?: boolean;
     gamePrice?: number;
     gameBalances: { userMarkdown: string; gameBalance: number }[];
+    expense?: string;
   }): string {
     return (
-      `${this.getGameNumber(gameId)}\n` +
+      `${this.getExpenseNumberText(gameId, expense)}\n` +
       `\n` +
-      `${this.getGameCreated(createdByUserMarkdown, isFree, gamePrice)}\n` +
+      `${this.getExpenseCreated(createdByUserMarkdown, isFree, gamePrice, expense)}\n` +
       `\n` +
-      (isFree ? '' : `${this.getBalancesBeforeGame(playUsers)}\n` + `\n`) +
+      (isFree ? '' : `${this.getBalancesBeforeExpense(playUsers, expense)}\n` + `\n`) +
       `${this.getPlayUsers(playUsers)}` +
       (isFree ? '' : `\n` + `${this.getPayUser(payByUserMarkdown)}\n` + `\n` + this.getGameBalances(gameBalances))
     );
   }
 
-  private getGameNumber(gameId: number): string {
-    return `Game #${gameId}`;
+  private getExpenseNumberText(gameId: number, expense?: string): string {
+    return `${expense || DEFAULT_EXPENSE_NAME} #${gameId}`;
   }
 
-  private getGameCreated(createdByUserMarkdown: string, isFree: boolean, gamePrice: number): string {
-    return `${createdByUserMarkdown} invites to play${isFree ? ' for FREE' : ''}!${
-      isFree ? '' : `\nGame cost: ${gamePrice} BYN`
-    }`;
+  private getExpenseCreated(createdByUserMarkdown: string, isFree: boolean, price: number, expense?: string): string {
+    return `${createdByUserMarkdown} invites to ${expense ? 'split expenses' : DEFAULT_SPLIT_NAME}${
+      isFree ? ' for FREE' : ''
+    }!${isFree ? '' : `\n${expense || DEFAULT_EXPENSE_NAME} price: ${price} BYN`}`;
   }
 
-  private getBalancesBeforeGame(
+  private getBalancesBeforeExpense(
     playUsers: { username?: string; firstName?: string; id: number; balance: number }[],
+    expense: string = DEFAULT_EXPENSE_NAME,
   ): string {
-    return `Balances before the game:` + `${playUsers.map(u => `\n${this.getUserMarkdown(u)}: ${u.balance} BYN`)}`;
+    return (
+      `Balances before the ${expense}:` + `${playUsers.map(u => `\n${this.getUserMarkdown(u)}: ${u.balance} BYN`)}`
+    );
   }
 
   private getPlayUsers(playUsers: { username?: string; firstName?: string; id: number }[]): string {
@@ -62,21 +70,25 @@ export class MessageService implements IMessageService {
     return `Game balances:` + `${gameBalances.map(u => `\n${u.userMarkdown}: ${u.gameBalance} BYN`)}`;
   }
 
-  getDeletedGameMessageText({
+  getDeletedExpenseMessageText({
     gameId,
     createdByUserMarkdown,
+    expense,
   }: {
     gameId: number;
     createdByUserMarkdown: string;
+    expense?: string;
   }): string {
-    return `${this.getGameNumber(gameId)}\n` + `Game created by ${createdByUserMarkdown} was deleted :(`;
+    return (
+      `${this.getExpenseNumberText(gameId, expense)}\n` + `Game created by ${createdByUserMarkdown} was deleted :(`
+    );
   }
 
   getReplyMarkup(isFree = false): IReplyMarkup {
     return {
       inline_keyboard: [
         [
-          { text: 'play', callback_data: 'play' },
+          { text: DEFAULT_SPLIT_NAME, callback_data: 'play' },
           ...(isFree ? [] : [{ text: 'pay', callback_data: 'pay' }]),
           { text: 'free', callback_data: 'free' },
           { text: 'done', callback_data: 'done' },

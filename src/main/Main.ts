@@ -8,7 +8,9 @@ import { IMessageBody } from '../common/model/IMessageBody.interface';
 import { ICallbackMessageBody } from '../common/model/ICallbackMessageBody.interface';
 import { Game } from '../database/entities/Game.entity';
 
-const NEW_GAME_REGEXP = '[0-9].*[?]';
+const NEW_GAME_REGEXP = '[\\d].*[?]';
+const PRICE_REGEXP = '\\[([\\d]+).*\\]';
+const EXPENSE_REGEXP = '\\{(.*)\\}';
 
 export class Main implements IMain {
   constructor(
@@ -79,7 +81,15 @@ export class Main implements IMain {
       lastName,
     });
 
-    const gameId = await this.databaseService.createGame(defaultPrice, userId, chatId);
+    const priceRegExp = new RegExp(PRICE_REGEXP, 'gm');
+    const priceMatchArray = priceRegExp.exec(messageText);
+    const price = Number(priceMatchArray && priceMatchArray[1]) || defaultPrice;
+
+    const expenseRegExp = new RegExp(EXPENSE_REGEXP, 'gm');
+    const expenseMatchArray = expenseRegExp.exec(messageText);
+    const expense = (expenseMatchArray && expenseMatchArray[1]) || '';
+
+    const gameId = await this.databaseService.createGame(price, userId, chatId, expense);
     const userBalance = await this.databaseService.getUserBalance(userId, chatId);
 
     await this.createGameMessage({
@@ -89,7 +99,8 @@ export class Main implements IMain {
       firstName,
       userBalance,
       chatId,
-      gamePrice: defaultPrice,
+      gamePrice: price,
+      expense,
     });
   }
 
@@ -101,6 +112,7 @@ export class Main implements IMain {
     userBalance,
     chatId,
     gamePrice,
+    expense,
   }: {
     gameId: number;
     userId: number;
@@ -109,16 +121,18 @@ export class Main implements IMain {
     userBalance: number;
     chatId: number;
     gamePrice: number;
+    expense: string;
   }): Promise<void> {
     const userMarkdown = this.messageService.getUserMarkdown({ username, firstName, id: userId });
 
-    const text = this.messageService.getGameMessageText({
+    const text = this.messageService.getMessageText({
       gameId,
       gamePrice,
       createdByUserMarkdown: userMarkdown,
       playUsers: [{ username, firstName, id: userId, balance: userBalance }],
       payByUserMarkdown: userMarkdown,
       gameBalances: [{ userMarkdown, gameBalance: 0 }],
+      expense,
     });
 
     const replyMarkup = this.messageService.getReplyMarkup(false);
@@ -160,7 +174,6 @@ export class Main implements IMain {
     });
 
     const game = await this.databaseService.getGame(chatId, messageId);
-
     console.log(`Current game: ${JSON.stringify(game)}`);
 
     switch (data) {
@@ -422,11 +435,12 @@ export class Main implements IMain {
     gameBalances: { userMarkdown: string; gameBalance: number }[];
   }): Promise<string | void> {
     const text = game.isDeleted
-      ? this.messageService.getDeletedGameMessageText({
+      ? this.messageService.getDeletedExpenseMessageText({
           gameId: game.id,
           createdByUserMarkdown: this.messageService.getUserMarkdown(game.createdBy),
+          expense: game.expense,
         })
-      : this.messageService.getGameMessageText({
+      : this.messageService.getMessageText({
           gameId: game.id,
           createdByUserMarkdown: this.messageService.getUserMarkdown(game.createdBy),
           playUsers: game.playUsers.map(u => ({ ...u, balance: u.balances[0].amount })),
@@ -434,6 +448,7 @@ export class Main implements IMain {
           isFree: game.isFree,
           gamePrice: game.price,
           gameBalances,
+          expense: game.expense,
         });
 
     const replyMarkup = game.isDeleted

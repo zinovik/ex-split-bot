@@ -3,7 +3,7 @@ import { IReplyMarkup } from '../common/model/IReplyMarkup.interface';
 export interface IMessageService {
   getUserMarkdown({ username, firstName, id }: { username?: string; firstName?: string; id: number }): string;
 
-  getGameMessageText(parameters: {
+  getMessageText(parameters: {
     gameId: number;
     createdByUserMarkdown: string;
     playUsers: { username?: string; firstName?: string; id: number; balance: number }[];
@@ -11,9 +11,10 @@ export interface IMessageService {
     isFree?: boolean;
     gamePrice?: number;
     gameBalances: { userMarkdown: string; gameBalance: number }[];
+    expense?: string;
   }): string;
 
-  getDeletedGameMessageText(parameters: { gameId: number; createdByUserMarkdown: string }): string;
+  getDeletedExpenseMessageText(parameters: { gameId: number; createdByUserMarkdown: string; expense?: string }): string;
 
   getReplyMarkup(isFree?: boolean): IReplyMarkup;
   getDoneGameReplyMarkup(): IReplyMarkup;

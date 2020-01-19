@@ -53,6 +53,7 @@ describe('Main', () => {
     const balance = 999;
     const userMarkdown = 'test-user-markdown';
     const replyMarkup = 'test-reply-markup';
+    const expense = 'test-expense';
     const messageBody: IMessageBody = {
       update_id: 0,
       message: {
@@ -72,7 +73,7 @@ describe('Main', () => {
           type: '',
         },
         date: 0,
-        text: '1?',
+        text: `{${expense}} 1?`,
       },
     };
     const gameMessageText = 'test-telegram-message-text';
@@ -86,13 +87,13 @@ describe('Main', () => {
       firstName: user.firstName,
       lastName: user.lastName,
     });
-    databaseServiceMockCreateGame({ gamePrice: defaultPrice, userId: user.id, chatId }, gameId);
+    databaseServiceMockCreateGame({ gamePrice: defaultPrice, userId: user.id, chatId, expense }, gameId);
     messageServiceMockGetUserMarkdown(
       { username: user.username, firstName: user.firstName, id: user.id },
       userMarkdown,
     );
     databaseServiceMockGetUserBalance({ userId: user.id, chatId }, balance);
-    messageServiceMockGetGameMessageText(
+    messageServiceMockGetMessageText(
       {
         gameId,
         createdByUserMarkdown: userMarkdown,
@@ -100,6 +101,7 @@ describe('Main', () => {
         payByUserMarkdown: userMarkdown,
         gameBalances: [{ userMarkdown, gameBalance: 0 }],
         gamePrice: defaultPrice,
+        expense,
       },
       gameMessageText,
     );
@@ -143,11 +145,11 @@ describe('Main', () => {
   }
 
   function databaseServiceMockCreateGame(
-    { gamePrice, userId, chatId }: { gamePrice: number; userId: number; chatId: number },
+    { gamePrice, userId, chatId, expense }: { gamePrice: number; userId: number; chatId: number; expense: string },
     gameId: number,
   ): void {
     databaseServiceMock
-      .setup((x: IDatabaseService) => x.createGame(gamePrice, userId, chatId))
+      .setup((x: IDatabaseService) => x.createGame(gamePrice, userId, chatId, expense))
       .returns(async () => gameId)
       .verifiable(Times.once());
   }
@@ -172,7 +174,7 @@ describe('Main', () => {
       .verifiable(Times.once());
   }
 
-  function messageServiceMockGetGameMessageText(
+  function messageServiceMockGetMessageText(
     parameters: {
       gameId: number;
       createdByUserMarkdown: string;
@@ -180,11 +182,12 @@ describe('Main', () => {
       payByUserMarkdown: string;
       gameBalances: { userMarkdown: string; gameBalance: number }[];
       gamePrice?: number;
+      expense?: string;
     },
     gameMessageText: string,
   ): void {
     messageServiceMock
-      .setup((x: IMessageService) => x.getGameMessageText(parameters))
+      .setup((x: IMessageService) => x.getMessageText(parameters))
       .returns(() => gameMessageText)
       .verifiable(Times.once());
   }
