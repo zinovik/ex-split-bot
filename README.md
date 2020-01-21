@@ -102,3 +102,7 @@ KUBECONFIG=~/Downloads/okteto-kube.config kubectl port-forward service/postgres 
 ### 2.4. get application logs from the Kubernetes Okteto service
 
 KUBECONFIG=~/Downloads/okteto-kube.config kubectl logs service/app -f
+
+### 2.5. update deployment on the Kubernetes Okteto service
+
+KUBECONFIG=~/Downloads/okteto-kube.config kubectl rollout restart deployment.apps/ex-split-bot

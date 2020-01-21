@@ -51,6 +51,8 @@ describe('Message', () => {
         [
           { text: 'play', callback_data: 'split' },
           { text: 'play and pay', callback_data: 'split and pay' },
+        ],
+        [
           { text: 'free', callback_data: 'free' },
           { text: 'done', callback_data: 'done' },
           { text: 'delete', callback_data: 'delete' },

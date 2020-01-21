@@ -91,6 +91,8 @@ export class MessageService implements IMessageService {
         [
           { text: DEFAULT_SPLIT_NAME, callback_data: 'split' },
           ...(isFree ? [] : [{ text: `${DEFAULT_SPLIT_NAME} and pay`, callback_data: 'split and pay' }]),
+        ],
+        [
           { text: 'free', callback_data: 'free' },
           { text: 'done', callback_data: 'done' },
           { text: 'delete', callback_data: 'delete' },
