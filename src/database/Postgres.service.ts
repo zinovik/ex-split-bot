@@ -90,7 +90,7 @@ export class PostgresService implements IDatabaseService {
       .update({ user: { id: userId }, group: { id: String(chatId) } }, { amount: balance });
   }
 
-  async createGame(price: number, userId: number, chatId: number, expense: string): Promise<number> {
+  async createExpense(price: number, userId: number, chatId: number, expense: string): Promise<number> {
     const connection = await this.getConnectionPromise;
     const a = await connection.getRepository(Game).insert({
       price,
@@ -105,21 +105,21 @@ export class PostgresService implements IDatabaseService {
       messageId: 0,
     });
 
-    const gameId = a.identifiers[0].id;
+    const expenseId = a.identifiers[0].id;
 
-    await this.addPlayUser(gameId, userId);
+    await this.addPlayUser(expenseId, userId);
 
-    return gameId;
+    return expenseId;
   }
 
-  async addGameMessageId(gameId: number, messageId: number): Promise<void> {
+  async addExpenseMessageId(expenseId: number, messageId: number): Promise<void> {
     const connection = await this.getConnectionPromise;
-    await connection.getRepository(Game).update(gameId, { messageId });
+    await connection.getRepository(Game).update(expenseId, { messageId });
   }
 
-  async getGame(chatId: number, messageId: number): Promise<Game> {
+  async getExpense(chatId: number, messageId: number): Promise<Game> {
     const connection = await this.getConnectionPromise;
-    const game = await connection
+    const expense = await connection
       .getRepository(Game)
       .createQueryBuilder('game')
       .select([
@@ -152,64 +152,64 @@ export class PostgresService implements IDatabaseService {
       .andWhere('balances.group = :chatId OR balances.group is null', { chatId })
       .getOne();
 
-    return game as Game;
+    return expense as Game;
   }
 
-  async addPlayUser(gameId: number, userId: number): Promise<void> {
+  async addPlayUser(expenseId: number, userId: number): Promise<void> {
     const connection = await this.getConnectionPromise;
     await connection.query(
       `
       INSERT INTO "play" ("gameId", "userId")
       VALUES ($1, $2)
     `,
-      [gameId, userId],
+      [expenseId, userId],
     );
   }
 
-  async removePlayUser(gameId: number, userId: number): Promise<void> {
+  async removePlayUser(expenseId: number, userId: number): Promise<void> {
     const connection = await this.getConnectionPromise;
     await connection.query(
       `
       DELETE FROM "play"
       WHERE "gameId" = $1 AND "userId" = $2;
     `,
-      [gameId, userId],
+      [expenseId, userId],
     );
   }
 
-  async updatePayBy(gameId: number, userId: number | null): Promise<void> {
+  async updatePayBy(expenseId: number, userId: number | null): Promise<void> {
     const connection = await this.getConnectionPromise;
-    await connection.getRepository(Game).update(gameId, { payBy: { id: userId } as User });
+    await connection.getRepository(Game).update(expenseId, { payBy: { id: userId } as User });
   }
 
-  async freeGame(gameId: number): Promise<void> {
+  async freeExpense(expenseId: number): Promise<void> {
     const connection = await this.getConnectionPromise;
-    await connection.getRepository(Game).update(gameId, { isFree: true, payBy: null });
+    await connection.getRepository(Game).update(expenseId, { isFree: true, payBy: null });
   }
 
-  async notFreeGame(gameId: number): Promise<void> {
+  async notFreeExpense(expenseId: number): Promise<void> {
     const connection = await this.getConnectionPromise;
-    await connection.getRepository(Game).update(gameId, { isFree: false });
+    await connection.getRepository(Game).update(expenseId, { isFree: false });
   }
 
-  async doneGame(gameId: number): Promise<void> {
+  async doneExpense(expenseId: number): Promise<void> {
     const connection = await this.getConnectionPromise;
-    await connection.getRepository(Game).update(gameId, { isDone: true });
+    await connection.getRepository(Game).update(expenseId, { isDone: true });
   }
 
-  async editGame(gameId: number): Promise<void> {
+  async editExpense(expenseId: number): Promise<void> {
     const connection = await this.getConnectionPromise;
-    await connection.getRepository(Game).update(gameId, { isDone: false });
+    await connection.getRepository(Game).update(expenseId, { isDone: false });
   }
 
-  async deleteGame(gameId: number): Promise<void> {
+  async deleteExpense(expenseId: number): Promise<void> {
     const connection = await this.getConnectionPromise;
-    await connection.getRepository(Game).update(gameId, { isDeleted: true });
+    await connection.getRepository(Game).update(expenseId, { isDeleted: true });
   }
 
-  async restoreGame(gameId: number): Promise<void> {
+  async restoreExpense(expenseId: number): Promise<void> {
     const connection = await this.getConnectionPromise;
-    await connection.getRepository(Game).update(gameId, { isDeleted: false });
+    await connection.getRepository(Game).update(expenseId, { isDeleted: false });
   }
 
   async getUsers(chatUsername: string): Promise<User[]> {

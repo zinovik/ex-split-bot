@@ -6,7 +6,7 @@
 
 # ExSplitBot
 
-This bot works in a Telegram group. When someone invites others to play, the bot sends a message with buttons to determine who will play and who pays for the game. Then the bot counts users' balances.
+This bot works in a Telegram group. When someone invites others to split expense, the bot sends a message with buttons to determine who will split and who pays for the expense. Then the bot counts users' balances.
 
 You can use it as Okteto Kubernetes service or as Netlify Lambda Functions.
 

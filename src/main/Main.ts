@@ -8,7 +8,7 @@ import { IMessageBody } from '../common/model/IMessageBody.interface';
 import { ICallbackMessageBody } from '../common/model/ICallbackMessageBody.interface';
 import { Game } from '../database/entities/Game.entity';
 
-const NEW_GAME_REGEXP = '[\\d].*[?]';
+const NEW_EXPENSE_REGEXP = '[\\d].*[?]';
 const PRICE_REGEXP = '\\[([\\d]+).*\\]';
 const EXPENSE_REGEXP = '\\{(.*)\\}';
 
@@ -66,7 +66,7 @@ export class Main implements IMain {
 
     const messageText = text.trim().toLowerCase();
 
-    const playRegExp = new RegExp(NEW_GAME_REGEXP, 'gm');
+    const playRegExp = new RegExp(NEW_EXPENSE_REGEXP, 'gm');
     if (!playRegExp.test(messageText)) {
       console.error('No keyword found!');
       return;
@@ -89,49 +89,49 @@ export class Main implements IMain {
     const expenseMatchArray = expenseRegExp.exec(messageText);
     const expense = (expenseMatchArray && expenseMatchArray[1]) || '';
 
-    const gameId = await this.databaseService.createGame(price, userId, chatId, expense);
+    const expenseId = await this.databaseService.createExpense(price, userId, chatId, expense);
     const userBalance = await this.databaseService.getUserBalance(userId, chatId);
 
-    await this.createGameMessage({
-      gameId,
+    await this.createExpenseMessage({
+      expenseId,
       userId,
       username,
       firstName,
       userBalance,
       chatId,
-      gamePrice: price,
+      price,
       expense,
     });
   }
 
-  private async createGameMessage({
-    gameId,
+  private async createExpenseMessage({
+    expenseId,
     userId,
     username,
     firstName,
     userBalance,
     chatId,
-    gamePrice,
+    price,
     expense,
   }: {
-    gameId: number;
+    expenseId: number;
     userId: number;
     username?: string;
     firstName?: string;
     userBalance: number;
     chatId: number;
-    gamePrice: number;
+    price: number;
     expense: string;
   }): Promise<void> {
     const userMarkdown = this.messageService.getUserMarkdown({ username, firstName, id: userId });
 
     const text = this.messageService.getMessageText({
-      gameId,
-      gamePrice,
+      expenseId,
+      price,
       createdByUserMarkdown: userMarkdown,
       playUsers: [{ username, firstName, id: userId, balance: userBalance }],
       payByUserMarkdown: userMarkdown,
-      gameBalances: [{ userMarkdown, gameBalance: 0 }],
+      expenseBalances: [{ userMarkdown, expenseBalance: 0 }],
       expense,
     });
 
@@ -144,7 +144,7 @@ export class Main implements IMain {
         chatId,
       });
 
-      await this.databaseService.addGameMessageId(gameId, messageId);
+      await this.databaseService.addExpenseMessageId(expenseId, messageId);
     } catch (error) {
       console.error('Error sending telegram message: ', error.message);
       console.error('Error sending telegram message: ', error.response.data.description);
@@ -173,24 +173,24 @@ export class Main implements IMain {
       lastName,
     });
 
-    const game = await this.databaseService.getGame(chatId, messageId);
-    console.log(`Current game: ${JSON.stringify(game)}`);
+    const expense = await this.databaseService.getExpense(chatId, messageId);
+    console.log(`Current expense: ${JSON.stringify(expense)}`);
 
     switch (data) {
-      case 'play':
-        await this.playGame(game, userId);
+      case 'split':
+        await this.splitExpense(expense, userId);
         break;
 
-      case 'pay':
-        await this.payGame(game, userId);
+      case 'split and pay':
+        await this.splitAndPayExpense(expense, userId);
         break;
 
       case 'free':
-        await this.freeGame(game);
+        await this.freeExpense(expense);
         break;
 
       case 'done': {
-        const doneFailMessage = await this.doneGame(game, userId, chatId);
+        const doneFailMessage = await this.doneExpense(expense, userId, chatId);
         if (doneFailMessage) {
           await this.telegramService.answerCallback({ callbackQueryId, text: doneFailMessage });
           return;
@@ -199,7 +199,7 @@ export class Main implements IMain {
       }
 
       case 'delete': {
-        const deleteFailMessage = await this.deleteGame(game, userId, chatId);
+        const deleteFailMessage = await this.deleteExpense(expense, userId, chatId);
         if (deleteFailMessage) {
           await this.telegramService.answerCallback({ callbackQueryId, text: deleteFailMessage });
           return;
@@ -208,7 +208,7 @@ export class Main implements IMain {
       }
 
       case 'restore': {
-        const restoreFailMessage = await this.restoreGame(game, userId, chatId);
+        const restoreFailMessage = await this.restoreExpense(expense, userId, chatId);
         if (restoreFailMessage) {
           await this.telegramService.answerCallback({ callbackQueryId, text: restoreFailMessage });
           return;
@@ -217,7 +217,7 @@ export class Main implements IMain {
       }
 
       case 'edit': {
-        const editFailMessage = await this.editGame(game, userId, chatId);
+        const editFailMessage = await this.editExpense(expense, userId, chatId);
         if (editFailMessage) {
           await this.telegramService.answerCallback({ callbackQueryId, text: editFailMessage });
           return;
@@ -229,80 +229,80 @@ export class Main implements IMain {
         return;
     }
 
-    const updatedGame = await this.databaseService.getGame(chatId, messageId);
+    const updatedExpense = await this.databaseService.getExpense(chatId, messageId);
 
-    const gameBalances = this.getGameBalances(updatedGame);
+    const expenseBalances = this.getExpenseBalances(updatedExpense);
 
-    await this.updateGameMessage({
-      game: data === 'done' ? ({ ...updatedGame, playUsers: game.playUsers } as Game) : updatedGame,
+    await this.updateExpenseMessage({
+      expense: data === 'done' ? ({ ...updatedExpense, playUsers: expense.playUsers } as Game) : updatedExpense,
       chatId,
       messageId,
       callbackQueryId,
-      gameBalances,
+      expenseBalances,
     });
   }
 
-  private async playGame(game: Game, userId: number): Promise<void> {
-    if (game.isDeleted || game.isDone) {
-      throw new Error("You can't play deleted or done game");
+  private async splitExpense(expense: Game, userId: number): Promise<void> {
+    if (expense.isDeleted || expense.isDone) {
+      throw new Error("You can't play deleted or done expense");
     }
 
-    if (game.playUsers.some(u => u.id === userId)) {
-      await this.databaseService.removePlayUser(game.id, userId);
+    if (expense.playUsers.some(u => u.id === userId)) {
+      await this.databaseService.removePlayUser(expense.id, userId);
 
-      if (game.payBy && game.payBy.id === userId) {
-        await this.databaseService.updatePayBy(game.id, null);
+      if (expense.payBy && expense.payBy.id === userId) {
+        await this.databaseService.updatePayBy(expense.id, null);
       }
 
       return;
     }
 
-    await this.databaseService.addPlayUser(game.id, userId);
+    await this.databaseService.addPlayUser(expense.id, userId);
   }
 
-  private async payGame(game: Game, userId: number): Promise<void> {
-    if (game.isDeleted || game.isDone || game.isFree) {
-      throw new Error("You can't pay for the deleted, done or free game");
+  private async splitAndPayExpense(expense: Game, userId: number): Promise<void> {
+    if (expense.isDeleted || expense.isDone || expense.isFree) {
+      throw new Error("You can't pay for the deleted, done or free expense");
     }
 
-    if (game.payBy && game.payBy.id === userId) {
-      await this.databaseService.updatePayBy(game.id, null);
+    if (expense.payBy && expense.payBy.id === userId) {
+      await this.databaseService.updatePayBy(expense.id, null);
 
       return;
     }
 
-    await this.databaseService.updatePayBy(game.id, userId);
+    await this.databaseService.updatePayBy(expense.id, userId);
 
-    if (!game.playUsers.some(u => u.id === userId)) {
-      await this.databaseService.addPlayUser(game.id, userId);
+    if (!expense.playUsers.some(u => u.id === userId)) {
+      await this.databaseService.addPlayUser(expense.id, userId);
     }
   }
 
-  private async freeGame(game: Game): Promise<void> {
-    if (game.isDeleted || game.isDone) {
-      throw new Error("You can't set deleted or done game free");
+  private async freeExpense(expense: Game): Promise<void> {
+    if (expense.isDeleted || expense.isDone) {
+      throw new Error("You can't set deleted or done expense free");
     }
 
-    if (game.isFree) {
-      await this.databaseService.notFreeGame(game.id);
+    if (expense.isFree) {
+      await this.databaseService.notFreeExpense(expense.id);
 
       return;
     }
 
-    await this.databaseService.freeGame(game.id);
-    await this.databaseService.updatePayBy(game.id, null);
+    await this.databaseService.freeExpense(expense.id);
+    await this.databaseService.updatePayBy(expense.id, null);
   }
 
-  private async doneGame(game: Game, userId: number, chatId: number): Promise<string | void> {
-    if (game.isDeleted || game.isDone) {
-      throw new Error("You can't finish deleted or done game");
+  private async doneExpense(expense: Game, userId: number, chatId: number): Promise<string | void> {
+    if (expense.isDeleted || expense.isDone) {
+      throw new Error("You can't finish deleted or done expense");
     }
 
-    if (!game.isFree && !game.payBy) {
+    if (!expense.isFree && !expense.payBy) {
       return 'You can\'t finish a game if it is not free and nobody paid!';
     }
 
-    if (game.createdBy.id !== userId) {
+    if (expense.createdBy.id !== userId) {
       const adminIds = await this.telegramService.getChatAdministratorsIds(chatId);
 
       if (!adminIds.includes(userId)) {
@@ -310,27 +310,27 @@ export class Main implements IMain {
       }
     }
 
-    if (!game.isFree) {
-      const gameBalances = this.getGameBalances(game);
+    if (!expense.isFree) {
+      const expenseBalances = this.getExpenseBalances(expense);
 
-      for (let i = 0; i < game.playUsers.length; i++) {
+      for (let i = 0; i < expense.playUsers.length; i++) {
         await this.databaseService.setUserBalance(
-          game.playUsers[i].id,
+          expense.playUsers[i].id,
           chatId,
-          Number(game.playUsers[i].balances[0].amount) + gameBalances[i].gameBalance,
+          Number(expense.playUsers[i].balances[0].amount) + expenseBalances[i].expenseBalance,
         );
       }
     }
 
-    await this.databaseService.doneGame(game.id);
+    await this.databaseService.doneExpense(expense.id);
   }
 
-  private async deleteGame(game: Game, userId: number, chatId: number): Promise<string | void> {
-    if (game.isDeleted || game.isDone) {
-      throw new Error("You can't delete deleted or done game");
+  private async deleteExpense(expense: Game, userId: number, chatId: number): Promise<string | void> {
+    if (expense.isDeleted || expense.isDone) {
+      throw new Error("You can't delete deleted or done expense");
     }
 
-    if (game.createdBy.id !== userId) {
+    if (expense.createdBy.id !== userId) {
       const adminIds = await this.telegramService.getChatAdministratorsIds(chatId);
 
       if (!adminIds.includes(userId)) {
@@ -338,12 +338,12 @@ export class Main implements IMain {
       }
     }
 
-    await this.databaseService.deleteGame(game.id);
+    await this.databaseService.deleteExpense(expense.id);
   }
 
-  private async restoreGame(game: Game, userId: number, chatId: number): Promise<string | void> {
-    if (!game.isDeleted || game.isDone) {
-      throw new Error("You can't restore not deleted or done game");
+  private async restoreExpense(expense: Game, userId: number, chatId: number): Promise<string | void> {
+    if (!expense.isDeleted || expense.isDone) {
+      throw new Error("You can't restore not deleted or done expense");
     }
 
     const adminIds = await this.telegramService.getChatAdministratorsIds(chatId);
@@ -352,15 +352,15 @@ export class Main implements IMain {
       return 'Only admin can restore a game!';
     }
 
-    await this.databaseService.restoreGame(game.id);
+    await this.databaseService.restoreExpense(expense.id);
   }
 
-  private async editGame(game: Game, userId: number, chatId: number): Promise<string | void> {
-    if (game.isDeleted || !game.isDone) {
-      throw new Error("You can't edit deleted or not done game");
+  private async editExpense(expense: Game, userId: number, chatId: number): Promise<string | void> {
+    if (expense.isDeleted || !expense.isDone) {
+      throw new Error("You can't edit deleted or not done expense");
     }
 
-    if (!game.isDone) {
+    if (!expense.isDone) {
       return 'You can edit only done game!';
     }
 
@@ -370,22 +370,22 @@ export class Main implements IMain {
       return 'Only admin can edit a game';
     }
 
-    if (!game.isFree) {
-      const gameBalances = this.getGameBalances(game);
+    if (!expense.isFree) {
+      const expenseBalances = this.getExpenseBalances(expense);
 
-      for (let i = 0; i < game.playUsers.length; i++) {
+      for (let i = 0; i < expense.playUsers.length; i++) {
         await this.databaseService.setUserBalance(
-          game.playUsers[i].id,
+          expense.playUsers[i].id,
           chatId,
-          Number(game.playUsers[i].balances[0].amount) - gameBalances[i].gameBalance,
+          Number(expense.playUsers[i].balances[0].amount) - expenseBalances[i].expenseBalance,
         );
       }
     }
 
-    await this.databaseService.editGame(game.id);
+    await this.databaseService.editExpense(expense.id);
   }
 
-  private getGameBalances({
+  private getExpenseBalances({
     isFree,
     playUsers,
     price,
@@ -395,67 +395,67 @@ export class Main implements IMain {
     playUsers: { username?: string; firstName?: string; id: number }[];
     price: number;
     payBy?: { id: number } | null;
-  }): { id: number; userMarkdown: string; gameBalance: number }[] {
+  }): { id: number; userMarkdown: string; expenseBalance: number }[] {
     if (isFree || !payBy) {
       return [];
     }
 
-    const gameCost = price / playUsers.length;
+    const expenseCost = price / playUsers.length;
 
-    const gameBalances = playUsers.map(u => {
-      let userGameBalance = 0;
+    const expenseBalances = playUsers.map(u => {
+      let userExpenseBalance = 0;
 
       if (payBy.id === u.id) {
-        userGameBalance += price;
+        userExpenseBalance += price;
       }
 
-      userGameBalance -= gameCost;
+      userExpenseBalance -= expenseCost;
 
       return {
         id: u.id,
         userMarkdown: this.messageService.getUserMarkdown(u),
-        gameBalance: userGameBalance,
+        expenseBalance: userExpenseBalance,
       };
     });
 
-    return gameBalances;
+    return expenseBalances;
   }
 
-  private async updateGameMessage({
-    game,
+  private async updateExpenseMessage({
+    expense,
     chatId,
     messageId,
     callbackQueryId,
-    gameBalances,
+    expenseBalances,
   }: {
-    game: Game;
+    expense: Game;
     chatId: number;
     messageId: number;
     callbackQueryId: string;
-    gameBalances: { userMarkdown: string; gameBalance: number }[];
+    expenseBalances: { userMarkdown: string; expenseBalance: number }[];
   }): Promise<string | void> {
-    const text = game.isDeleted
+    const text = expense.isDeleted
       ? this.messageService.getDeletedExpenseMessageText({
-          gameId: game.id,
-          createdByUserMarkdown: this.messageService.getUserMarkdown(game.createdBy),
-          expense: game.expense,
+          expenseId: expense.id,
+          createdByUserMarkdown: this.messageService.getUserMarkdown(expense.createdBy),
+          expense: expense.expense,
         })
       : this.messageService.getMessageText({
-          gameId: game.id,
-          createdByUserMarkdown: this.messageService.getUserMarkdown(game.createdBy),
-          playUsers: game.playUsers.map(u => ({ ...u, balance: u.balances[0].amount })),
-          payByUserMarkdown: game.payBy ? this.messageService.getUserMarkdown(game.payBy) : '',
-          isFree: game.isFree,
-          gamePrice: game.price,
-          gameBalances,
-          expense: game.expense,
+          expenseId: expense.id,
+          createdByUserMarkdown: this.messageService.getUserMarkdown(expense.createdBy),
+          playUsers: expense.playUsers.map(u => ({ ...u, balance: u.balances[0].amount })),
+          payByUserMarkdown: expense.payBy ? this.messageService.getUserMarkdown(expense.payBy) : '',
+          isFree: expense.isFree,
+          price: expense.price,
+          expenseBalances,
+          expense: expense.expense,
         });
 
-    const replyMarkup = game.isDeleted
-      ? this.messageService.getDeletedGameReplyMarkup()
-      : game.isDone
-      ? this.messageService.getDoneGameReplyMarkup()
-      : this.messageService.getReplyMarkup(game.isFree);
+    const replyMarkup = expense.isDeleted
+      ? this.messageService.getDeletedExpenseReplyMarkup()
+      : expense.isDone
+      ? this.messageService.getDoneExpenseReplyMarkup()
+      : this.messageService.getReplyMarkup(expense.isFree);
 
     try {
       await this.telegramService.editMessageText({
@@ -467,7 +467,7 @@ export class Main implements IMain {
 
       await this.telegramService.answerCallback({
         callbackQueryId,
-        text: game.isDeleted ? 'The game was successfully deleted!' : 'The game was successfully updated!',
+        text: expense.isDeleted ? 'The game was successfully deleted!' : 'The game was successfully updated!',
       });
     } catch (error) {
       console.error('Error sending telegram message: ', error.message);

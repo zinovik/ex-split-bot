@@ -38,11 +38,11 @@ describe('Main', () => {
     messageServiceMock.verifyAll();
   });
 
-  it('Should process message to create new game', async () => {
+  it('Should process message to create new expense', async () => {
     // Arrange
     const chatUsername = 'test-chat-username';
     const defaultPrice = 9;
-    const gameId = 11;
+    const expenseId = 11;
     const user = {
       id: 987,
       firstName: 'test-first-name',
@@ -76,7 +76,7 @@ describe('Main', () => {
         text: `{${expense}} 1?`,
       },
     };
-    const gameMessageText = 'test-telegram-message-text';
+    const expenseMessageText = 'test-telegram-message-text';
     const messageId = 555;
     configurationServiceMockgGetConfiguration({ defaultPrice });
     databaseServiceMockUpsertUser({
@@ -87,7 +87,7 @@ describe('Main', () => {
       firstName: user.firstName,
       lastName: user.lastName,
     });
-    databaseServiceMockCreateGame({ gamePrice: defaultPrice, userId: user.id, chatId, expense }, gameId);
+    databaseServiceMockCreateExpense({ price: defaultPrice, userId: user.id, chatId, expense }, expenseId);
     messageServiceMockGetUserMarkdown(
       { username: user.username, firstName: user.firstName, id: user.id },
       userMarkdown,
@@ -95,26 +95,26 @@ describe('Main', () => {
     databaseServiceMockGetUserBalance({ userId: user.id, chatId }, balance);
     messageServiceMockGetMessageText(
       {
-        gameId,
+        expenseId,
         createdByUserMarkdown: userMarkdown,
         playUsers: [{ username: user.username, firstName: user.firstName, id: user.id, balance }],
         payByUserMarkdown: userMarkdown,
-        gameBalances: [{ userMarkdown, gameBalance: 0 }],
-        gamePrice: defaultPrice,
+        expenseBalances: [{ userMarkdown, expenseBalance: 0 }],
+        price: defaultPrice,
         expense,
       },
-      gameMessageText,
+      expenseMessageText,
     );
     messageServiceMockGetReplyMarkup(false, (replyMarkup as unknown) as IReplyMarkup);
     telegramServiceMockSendMessage(
       {
         replyMarkup: JSON.stringify(replyMarkup),
-        text: gameMessageText,
+        text: expenseMessageText,
         chatId,
       },
       messageId,
     );
-    databaseServiceMockAddGameMessageId({ gameId, messageId });
+    databaseServiceMockAddExpenseMessageId({ expenseId, messageId });
 
     // Act
     await main.processMessage(JSON.stringify(messageBody));
@@ -144,13 +144,13 @@ describe('Main', () => {
       .verifiable(Times.once());
   }
 
-  function databaseServiceMockCreateGame(
-    { gamePrice, userId, chatId, expense }: { gamePrice: number; userId: number; chatId: number; expense: string },
-    gameId: number,
+  function databaseServiceMockCreateExpense(
+    { price, userId, chatId, expense }: { price: number; userId: number; chatId: number; expense: string },
+    expenseId: number,
   ): void {
     databaseServiceMock
-      .setup((x: IDatabaseService) => x.createGame(gamePrice, userId, chatId, expense))
-      .returns(async () => gameId)
+      .setup((x: IDatabaseService) => x.createExpense(price, userId, chatId, expense))
+      .returns(async () => expenseId)
       .verifiable(Times.once());
   }
 
@@ -176,19 +176,19 @@ describe('Main', () => {
 
   function messageServiceMockGetMessageText(
     parameters: {
-      gameId: number;
+      expenseId: number;
       createdByUserMarkdown: string;
       playUsers: { username?: string; firstName?: string; id: number; balance: number }[];
       payByUserMarkdown: string;
-      gameBalances: { userMarkdown: string; gameBalance: number }[];
-      gamePrice?: number;
+      expenseBalances: { userMarkdown: string; expenseBalance: number }[];
+      price?: number;
       expense?: string;
     },
-    gameMessageText: string,
+    expenseMessageText: string,
   ): void {
     messageServiceMock
       .setup((x: IMessageService) => x.getMessageText(parameters))
-      .returns(() => gameMessageText)
+      .returns(() => expenseMessageText)
       .verifiable(Times.once());
   }
 
@@ -209,9 +209,15 @@ describe('Main', () => {
       .verifiable(Times.once());
   }
 
-  function databaseServiceMockAddGameMessageId({ gameId, messageId }: { gameId: number; messageId: number }): void {
+  function databaseServiceMockAddExpenseMessageId({
+    expenseId,
+    messageId,
+  }: {
+    expenseId: number;
+    messageId: number;
+  }): void {
     databaseServiceMock
-      .setup((x: IDatabaseService) => x.addGameMessageId(gameId, messageId))
+      .setup((x: IDatabaseService) => x.addExpenseMessageId(expenseId, messageId))
       .returns(async () => undefined)
       .verifiable(Times.once());
   }

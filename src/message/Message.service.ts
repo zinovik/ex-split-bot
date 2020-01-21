@@ -10,37 +10,37 @@ export class MessageService implements IMessageService {
   }
 
   getMessageText({
-    gameId,
+    expenseId,
     createdByUserMarkdown,
     playUsers,
     payByUserMarkdown,
     isFree = false,
-    gamePrice = 0,
-    gameBalances,
+    price = 0,
+    expenseBalances,
     expense,
   }: {
-    gameId: number;
+    expenseId: number;
     createdByUserMarkdown: string;
     playUsers: { username?: string; firstName?: string; id: number; balance: number }[];
     payByUserMarkdown: string;
     isFree?: boolean;
-    gamePrice?: number;
-    gameBalances: { userMarkdown: string; gameBalance: number }[];
+    price?: number;
+    expenseBalances: { userMarkdown: string; expenseBalance: number }[];
     expense?: string;
   }): string {
     return (
-      `${this.getExpenseNumberText(gameId, expense)}\n` +
+      `${this.getExpenseNumberText(expenseId, expense)}\n` +
       `\n` +
-      `${this.getExpenseCreated(createdByUserMarkdown, isFree, gamePrice, expense)}\n` +
+      `${this.getExpenseCreated(createdByUserMarkdown, isFree, price, expense)}\n` +
       `\n` +
       (isFree ? '' : `${this.getBalancesBeforeExpense(playUsers, expense)}\n` + `\n`) +
       `${this.getPlayUsers(playUsers)}` +
-      (isFree ? '' : `\n` + `${this.getPayUser(payByUserMarkdown)}\n` + `\n` + this.getGameBalances(gameBalances))
+      (isFree ? '' : `\n` + `${this.getPayUser(payByUserMarkdown)}\n` + `\n` + this.getExpenseBalances(expenseBalances))
     );
   }
 
-  private getExpenseNumberText(gameId: number, expense?: string): string {
-    return `${expense || DEFAULT_EXPENSE_NAME} #${gameId}`;
+  private getExpenseNumberText(expenseId: number, expense?: string): string {
+    return `${expense || DEFAULT_EXPENSE_NAME} #${expenseId}`;
   }
 
   private getExpenseCreated(createdByUserMarkdown: string, isFree: boolean, price: number, expense?: string): string {
@@ -67,21 +67,21 @@ export class MessageService implements IMessageService {
     return `pay: ${payByUserMarkdown}`;
   }
 
-  private getGameBalances(gameBalances: { userMarkdown: string; gameBalance: number }[]): string {
-    return `Game balances:` + `${gameBalances.map(u => `\n${u.userMarkdown}: ${u.gameBalance} BYN`)}`;
+  private getExpenseBalances(expenseBalances: { userMarkdown: string; expenseBalance: number }[]): string {
+    return `Game balances:` + `${expenseBalances.map(u => `\n${u.userMarkdown}: ${u.expenseBalance} BYN`)}`;
   }
 
   getDeletedExpenseMessageText({
-    gameId,
+    expenseId,
     createdByUserMarkdown,
     expense,
   }: {
-    gameId: number;
+    expenseId: number;
     createdByUserMarkdown: string;
     expense?: string;
   }): string {
     return (
-      `${this.getExpenseNumberText(gameId, expense)}\n` + `Game created by ${createdByUserMarkdown} was deleted :(`
+      `${this.getExpenseNumberText(expenseId, expense)}\n` + `Game created by ${createdByUserMarkdown} was deleted :(`
     );
   }
 
@@ -89,8 +89,8 @@ export class MessageService implements IMessageService {
     return {
       inline_keyboard: [
         [
-          { text: DEFAULT_SPLIT_NAME, callback_data: 'play' },
-          ...(isFree ? [] : [{ text: 'pay', callback_data: 'pay' }]),
+          { text: DEFAULT_SPLIT_NAME, callback_data: 'split' },
+          ...(isFree ? [] : [{ text: `${DEFAULT_SPLIT_NAME} and pay`, callback_data: 'split and pay' }]),
           { text: 'free', callback_data: 'free' },
           { text: 'done', callback_data: 'done' },
           { text: 'delete', callback_data: 'delete' },
@@ -99,13 +99,13 @@ export class MessageService implements IMessageService {
     };
   }
 
-  getDoneGameReplyMarkup(): IReplyMarkup {
+  getDoneExpenseReplyMarkup(): IReplyMarkup {
     return {
       inline_keyboard: [[{ text: 'edit', callback_data: 'edit' }]],
     };
   }
 
-  getDeletedGameReplyMarkup(): IReplyMarkup {
+  getDeletedExpenseReplyMarkup(): IReplyMarkup {
     return {
       inline_keyboard: [[{ text: 'restore', callback_data: 'restore' }]],
     };
