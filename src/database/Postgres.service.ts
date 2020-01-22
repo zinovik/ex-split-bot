@@ -3,7 +3,7 @@ import { createConnection, Connection } from 'typeorm';
 
 import { IDatabaseService } from './IDatabaseService.interface';
 import { User } from './entities/User.entity';
-import { Game } from './entities/Game.entity';
+import { Game } from './entities/Expense.entity';
 import { Group } from './entities/Group.entity';
 import { Balance } from './entities/Balance.entity';
 

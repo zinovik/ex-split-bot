@@ -8,7 +8,7 @@ import {
   OneToMany,
 } from 'typeorm';
 
-import { Game } from './Game.entity';
+import { Game } from './Expense.entity';
 import { Balance } from './Balance.entity';
 
 @Entity('group')

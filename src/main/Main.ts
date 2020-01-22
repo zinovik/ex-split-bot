@@ -6,7 +6,7 @@ import { IMessageService } from '../message/IMessageService.interface';
 
 import { IMessageBody } from '../common/model/IMessageBody.interface';
 import { ICallbackMessageBody } from '../common/model/ICallbackMessageBody.interface';
-import { Game } from '../database/entities/Game.entity';
+import { Game } from '../database/entities/Expense.entity';
 
 const NEW_EXPENSE_REGEXP = '[\\d].*[?]';
 const PRICE_REGEXP = '\\[([\\d]+).*\\]';
@@ -177,11 +177,11 @@ export class Main implements IMain {
     console.log(`Current expense: ${JSON.stringify(expense)}`);
 
     switch (data) {
-      case 'split':
+      case 'split/not split':
         await this.splitExpense(expense, userId);
         break;
 
-      case 'split and pay':
+      case 'split and pay/not pay':
         await this.splitAndPayExpense(expense, userId);
         break;
 

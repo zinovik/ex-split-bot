@@ -1,4 +1,4 @@
-import { Game } from './entities/Game.entity';
+import { Game } from './entities/Expense.entity';
 import { User } from './entities/User.entity';
 
 export interface IDatabaseService {
