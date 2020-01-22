@@ -196,6 +196,15 @@ export class Main implements IMain {
 
       case 'free':
         await this.freeExpense(expense);
+
+        if (expense.isFree) {
+          await this.telegramService.sendMessage({
+            text: 'Who will pay?',
+            chatId,
+            replyMarkup: '',
+          });
+        }
+
         break;
 
       case 'done': {
