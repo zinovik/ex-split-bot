@@ -51,6 +51,9 @@ export class PostgresService implements IDatabaseService {
     const group = new Group();
     group.id = String(chatId);
     group.username = chatUsername;
+    // group.defaultExpense = '';
+    // group.defaultPrice = 0;
+    // group.defaultAction = '';
     await connection.getRepository(Group).save(group);
 
     const user = new User();

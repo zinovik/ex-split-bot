@@ -19,6 +19,15 @@ export class Group extends DefaultNamingStrategy {
   @Column('text', { nullable: true })
   public username?: string;
 
+  @Column('text', { nullable: true })
+  public defaultExpense?: string;
+
+  @Column('decimal', { nullable: true })
+  public defaultPrice?: number;
+
+  @Column('text', { nullable: true })
+  public defaultAction?: string;
+
   @CreateDateColumn({ name: 'created_at' })
   public createdAt: Date;
 

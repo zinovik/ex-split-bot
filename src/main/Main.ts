@@ -183,6 +183,15 @@ export class Main implements IMain {
 
       case 'split and pay/not pay':
         await this.splitAndPayExpense(expense, userId);
+
+        await this.telegramService.sendMessage({
+          text: expense.payBy
+            ? 'Who will pay?'
+            : `${this.messageService.getUserMarkdown({ username, firstName, id: userId })} will pay`,
+          chatId,
+          replyMarkup: '',
+        });
+
         break;
 
       case 'free':
