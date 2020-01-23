@@ -88,11 +88,11 @@ export class MessageService implements IMessageService {
   getReplyMarkup(isFree = false): IReplyMarkup {
     return {
       inline_keyboard: [
-        [{ text: `${DEFAULT_SPLIT_NAME}/not ${DEFAULT_SPLIT_NAME}`, callback_data: 'split/not split' }],
+        [{ text: `${DEFAULT_SPLIT_NAME} | not ${DEFAULT_SPLIT_NAME}`, callback_data: 'split | not split' }],
         [
           ...(isFree
             ? []
-            : [{ text: `${DEFAULT_SPLIT_NAME} and pay/not pay`, callback_data: 'split and pay/not pay' }]),
+            : [{ text: `${DEFAULT_SPLIT_NAME} and pay | not pay`, callback_data: 'split and pay | not pay' }]),
         ],
         [
           { text: isFree ? 'not free' : 'free', callback_data: 'free' },

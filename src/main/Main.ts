@@ -177,11 +177,11 @@ export class Main implements IMain {
     console.log(`Current expense: ${JSON.stringify(expense)}`);
 
     switch (data) {
-      case 'split/not split':
+      case 'split | not split':
         await this.splitExpense(expense, userId);
         break;
 
-      case 'split and pay/not pay':
+      case 'split and pay | not pay':
         await this.splitAndPayExpense(expense, userId);
 
         await this.telegramService.sendMessage({
