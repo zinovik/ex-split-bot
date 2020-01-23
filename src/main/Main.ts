@@ -185,9 +185,10 @@ export class Main implements IMain {
         await this.splitAndPayExpense(expense, userId);
 
         await this.telegramService.sendMessage({
-          text: expense.payBy
-            ? 'Who will pay?'
-            : `${this.messageService.getUserMarkdown({ username, firstName, id: userId })} will pay`,
+          text:
+            expense.payBy && expense.payBy.id === userId
+              ? 'Who will pay?'
+              : `${this.messageService.getUserMarkdown({ username, firstName, id: userId })} will pay`,
           chatId,
           replyMarkup: '',
         });
