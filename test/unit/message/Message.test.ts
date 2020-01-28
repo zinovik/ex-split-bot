@@ -48,7 +48,7 @@ describe('Message', () => {
     // Arrange
     const initialReplyMarkup = {
       inline_keyboard: [
-        [{ text: 'play | not play', callback_data: 'split | not split' }],
+        [{ text: 'play | not play and not pay', callback_data: 'split | not split and not pay' }],
         [{ text: 'play and pay | not pay', callback_data: 'split and pay | not pay' }],
         [
           { text: 'free', callback_data: 'free' },

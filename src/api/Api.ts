@@ -11,4 +11,8 @@ export class Api implements IApi {
   async getUsers(chatUsername: string): Promise<User[]> {
     return await this.databaseService.getUsers(chatUsername);
   }
+
+  async getGroupsNames(): Promise<string[]> {
+    return await this.databaseService.getGroupsNames();
+  }
 }

@@ -34,6 +34,7 @@ export interface IDatabaseService {
   restoreExpense(expenseId: number): Promise<void>;
 
   getUsers(chatUsername: string): Promise<User[]>;
+  getGroupsNames(): Promise<string[]>;
 
   closeConnection(): Promise<void>;
 }

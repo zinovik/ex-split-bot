@@ -2,6 +2,7 @@ import * as dotenv from 'dotenv';
 import * as http from 'http';
 import * as url from 'url';
 import * as fs from 'fs';
+import * as Rollbar from 'rollbar';
 import { promisify } from 'util';
 
 import { Main } from './main/Main';
@@ -12,6 +13,16 @@ import { TelegramService } from './telegram/Telegram.service';
 import { MessageService } from './message/Message.service';
 import { ConfigParameterNotDefinedError } from './common/error/ConfigParameterNotDefinedError';
 import { User } from './database/entities/User.entity';
+
+if (process.env.ROLLBAR_ACCESS_TOKEN) {
+  const rollbar = new Rollbar({
+    accessToken: process.env.ROLLBAR_ACCESS_TOKEN,
+    captureUncaught: true,
+    captureUnhandledRejections: true,
+  });
+
+  rollbar.log('Application was started!');
+}
 
 dotenv.config();
 
@@ -106,6 +117,22 @@ const server = http.createServer((req, res) => {
             balance: u.balances[0] ? Number(u.balances[0].amount) : 0,
             balances: undefined,
           })),
+        };
+
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify(body));
+      } else if (route === '/groups') {
+        let groupsNames: string[] = [];
+
+        try {
+          groupsNames = await api.getGroupsNames();
+        } catch (error) {
+          console.error('Unexpected error occurred: ', error.message);
+        }
+
+        const body = {
+          result: 'success',
+          groups: groupsNames,
         };
 
         res.setHeader('Content-Type', 'application/json');

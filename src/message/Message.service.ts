@@ -29,8 +29,7 @@ export class MessageService implements IMessageService {
     expense?: string;
   }): string {
     return (
-      `${this.getExpenseNumberText(expenseId, expense)}\n` +
-      `\n` +
+      `${this.getExpenseNumberText(expenseId)}\n` +
       `${this.getExpenseCreated(createdByUserMarkdown, isFree, price, expense)}\n` +
       `\n` +
       (isFree ? '' : `${this.getBalancesBeforeExpense(playUsers, expense)}\n` + `\n`) +
@@ -39,8 +38,8 @@ export class MessageService implements IMessageService {
     );
   }
 
-  private getExpenseNumberText(expenseId: number, expense?: string): string {
-    return `${expense || DEFAULT_EXPENSE_NAME} #${expenseId}`;
+  private getExpenseNumberText(expenseId: number): string {
+    return `#${expenseId}`;
   }
 
   private getExpenseCreated(createdByUserMarkdown: string, isFree: boolean, price: number, expense?: string): string {
@@ -80,15 +79,18 @@ export class MessageService implements IMessageService {
     createdByUserMarkdown: string;
     expense?: string;
   }): string {
-    return (
-      `${this.getExpenseNumberText(expenseId, expense)}\n` + `Game created by ${createdByUserMarkdown} was deleted :(`
-    );
+    return `${this.getExpenseNumberText(expenseId)}\n` + `Game created by ${createdByUserMarkdown} was deleted :(`;
   }
 
   getReplyMarkup(isFree = false): IReplyMarkup {
     return {
       inline_keyboard: [
-        [{ text: `${DEFAULT_SPLIT_NAME} | not ${DEFAULT_SPLIT_NAME}`, callback_data: 'split | not split' }],
+        [
+          {
+            text: `${DEFAULT_SPLIT_NAME} | not ${DEFAULT_SPLIT_NAME}${isFree ? '' : ' and not pay'}`,
+            callback_data: 'split | not split and not pay',
+          },
+        ],
         [
           ...(isFree
             ? []

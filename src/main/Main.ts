@@ -177,8 +177,17 @@ export class Main implements IMain {
     console.log(`Current expense: ${JSON.stringify(expense)}`);
 
     switch (data) {
-      case 'split | not split':
+      case 'split | not split and not pay':
         await this.splitExpense(expense, userId);
+
+        if (!expense.isFree && expense.payBy && expense.payBy.id === userId) {
+          await this.telegramService.sendMessage({
+            text: 'Who will pay?',
+            chatId,
+            replyMarkup: '',
+          });
+        }
+
         break;
 
       case 'split and pay | not pay':
@@ -201,6 +210,12 @@ export class Main implements IMain {
         if (expense.isFree) {
           await this.telegramService.sendMessage({
             text: 'Who will pay?',
+            chatId,
+            replyMarkup: '',
+          });
+        } else if (expense.payBy && expense.payBy.id !== userId) {
+          await this.telegramService.sendMessage({
+            text: 'Game is free!',
             chatId,
             replyMarkup: '',
           });

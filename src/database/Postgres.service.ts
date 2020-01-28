@@ -230,6 +230,17 @@ export class PostgresService implements IDatabaseService {
     return users;
   }
 
+  async getGroupsNames(): Promise<string[]> {
+    const connection = await this.getConnectionPromise;
+
+    const groups = await connection
+      .getRepository(Group)
+      .createQueryBuilder('group')
+      .getMany();
+
+    return groups.filter(group => group.username).map(group => group.username) as string[];
+  }
+
   async closeConnection(): Promise<void> {
     const connection = await this.getConnectionPromise;
 
