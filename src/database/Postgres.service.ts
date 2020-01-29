@@ -162,7 +162,7 @@ export class PostgresService implements IDatabaseService {
     const connection = await this.getConnectionPromise;
     await connection.query(
       `
-      INSERT INTO "play" ("gameId", "userId")
+      INSERT INTO "play" ("expenseId", "userId")
       VALUES ($1, $2)
     `,
       [expenseId, userId],
@@ -174,7 +174,7 @@ export class PostgresService implements IDatabaseService {
     await connection.query(
       `
       DELETE FROM "play"
-      WHERE "gameId" = $1 AND "userId" = $2;
+      WHERE "expenseId" = $1 AND "userId" = $2;
     `,
       [expenseId, userId],
     );

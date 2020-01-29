@@ -1,0 +1,1 @@
+pg_restore -d 'postgres://postgres:dbpass123@localhost:9432/ex-split-bot' --format=c --verbose ex-split-bot-00000000-000000.dump
