@@ -1,4 +1,4 @@
-import { Game } from './entities/Expense.entity';
+import { Expense } from './entities/Expense.entity';
 import { User } from './entities/User.entity';
 
 export interface IDatabaseService {
@@ -17,7 +17,7 @@ export interface IDatabaseService {
   createExpense(price: number, userId: number, chatId: number, expense: string): Promise<number>;
   addExpenseMessageId(expenseId: number, messageId: number): Promise<void>;
 
-  getExpense(chatId: number, messageId: number): Promise<Game>;
+  getExpense(chatId: number, messageId: number): Promise<Expense>;
 
   addPlayUser(expenseId: number, userId: number): Promise<void>;
   removePlayUser(expenseId: number, userId: number): Promise<void>;

@@ -8,7 +8,7 @@ import {
   OneToMany,
 } from 'typeorm';
 
-import { Game } from './Expense.entity';
+import { Expense } from './Expense.entity';
 import { Balance } from './Balance.entity';
 
 @Entity('group')
@@ -35,11 +35,11 @@ export class Group extends DefaultNamingStrategy {
   public updatedAt: Date;
 
   @OneToMany(
-    type => Game,
-    game => game.group,
+    type => Expense,
+    expense => expense.group,
     { nullable: true },
   )
-  public games: Game[];
+  public games: Expense[];
 
   @OneToMany(
     type => Balance,

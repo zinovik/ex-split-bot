@@ -3,7 +3,7 @@ import { createConnection, Connection } from 'typeorm';
 
 import { IDatabaseService } from './IDatabaseService.interface';
 import { User } from './entities/User.entity';
-import { Game } from './entities/Expense.entity';
+import { Expense } from './entities/Expense.entity';
 import { Group } from './entities/Group.entity';
 import { Balance } from './entities/Balance.entity';
 
@@ -25,7 +25,7 @@ export class PostgresService implements IDatabaseService {
       username: dbUrl.auth.split(':')[0],
       password: dbUrl.auth.split(':')[1],
       database: dbUrl.path.split('/')[1],
-      entities: [User, Game, Group, Balance],
+      entities: [User, Expense, Group, Balance],
       synchronize: true,
       logging: true,
     });
@@ -95,7 +95,7 @@ export class PostgresService implements IDatabaseService {
 
   async createExpense(price: number, userId: number, chatId: number, expense: string): Promise<number> {
     const connection = await this.getConnectionPromise;
-    const a = await connection.getRepository(Game).insert({
+    const a = await connection.getRepository(Expense).insert({
       price,
       expense,
       isFree: false,
@@ -117,22 +117,22 @@ export class PostgresService implements IDatabaseService {
 
   async addExpenseMessageId(expenseId: number, messageId: number): Promise<void> {
     const connection = await this.getConnectionPromise;
-    await connection.getRepository(Game).update(expenseId, { messageId });
+    await connection.getRepository(Expense).update(expenseId, { messageId });
   }
 
-  async getExpense(chatId: number, messageId: number): Promise<Game> {
+  async getExpense(chatId: number, messageId: number): Promise<Expense> {
     const connection = await this.getConnectionPromise;
     const expense = await connection
-      .getRepository(Game)
-      .createQueryBuilder('game')
+      .getRepository(Expense)
+      .createQueryBuilder('expense')
       .select([
-        'game.id',
-        'game.price',
-        'game.messageId',
-        'game.isFree',
-        'game.isDone',
-        'game.isDeleted',
-        'game.expense',
+        'expense.id',
+        'expense.price',
+        'expense.messageId',
+        'expense.isFree',
+        'expense.isDone',
+        'expense.isDeleted',
+        'expense.expense',
         'createdBy.id',
         'createdBy.username',
         'createdBy.firstName',
@@ -147,15 +147,15 @@ export class PostgresService implements IDatabaseService {
         'playUsers.lastName',
         'balances.amount',
       ])
-      .leftJoin('game.createdBy', 'createdBy')
-      .leftJoin('game.payBy', 'payBy')
-      .leftJoin('game.playUsers', 'playUsers')
+      .leftJoin('expense.createdBy', 'createdBy')
+      .leftJoin('expense.payBy', 'payBy')
+      .leftJoin('expense.playUsers', 'playUsers')
       .leftJoin('playUsers.balances', 'balances')
       .where({ messageId, group: { id: chatId } })
       .andWhere('balances.group = :chatId OR balances.group is null', { chatId })
       .getOne();
 
-    return expense as Game;
+    return expense as Expense;
   }
 
   async addPlayUser(expenseId: number, userId: number): Promise<void> {
@@ -182,37 +182,37 @@ export class PostgresService implements IDatabaseService {
 
   async updatePayBy(expenseId: number, userId: number | null): Promise<void> {
     const connection = await this.getConnectionPromise;
-    await connection.getRepository(Game).update(expenseId, { payBy: { id: userId } as User });
+    await connection.getRepository(Expense).update(expenseId, { payBy: { id: userId } as User });
   }
 
   async freeExpense(expenseId: number): Promise<void> {
     const connection = await this.getConnectionPromise;
-    await connection.getRepository(Game).update(expenseId, { isFree: true, payBy: null });
+    await connection.getRepository(Expense).update(expenseId, { isFree: true, payBy: null });
   }
 
   async notFreeExpense(expenseId: number): Promise<void> {
     const connection = await this.getConnectionPromise;
-    await connection.getRepository(Game).update(expenseId, { isFree: false });
+    await connection.getRepository(Expense).update(expenseId, { isFree: false });
   }
 
   async doneExpense(expenseId: number): Promise<void> {
     const connection = await this.getConnectionPromise;
-    await connection.getRepository(Game).update(expenseId, { isDone: true });
+    await connection.getRepository(Expense).update(expenseId, { isDone: true });
   }
 
   async editExpense(expenseId: number): Promise<void> {
     const connection = await this.getConnectionPromise;
-    await connection.getRepository(Game).update(expenseId, { isDone: false });
+    await connection.getRepository(Expense).update(expenseId, { isDone: false });
   }
 
   async deleteExpense(expenseId: number): Promise<void> {
     const connection = await this.getConnectionPromise;
-    await connection.getRepository(Game).update(expenseId, { isDeleted: true });
+    await connection.getRepository(Expense).update(expenseId, { isDeleted: true });
   }
 
   async restoreExpense(expenseId: number): Promise<void> {
     const connection = await this.getConnectionPromise;
-    await connection.getRepository(Game).update(expenseId, { isDeleted: false });
+    await connection.getRepository(Expense).update(expenseId, { isDeleted: false });
   }
 
   async getUsers(chatUsername: string): Promise<User[]> {

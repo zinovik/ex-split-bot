@@ -15,9 +15,9 @@ import {
 import { User } from './User.entity';
 import { Group } from './Group.entity';
 
-@Entity('game')
+@Entity('expense')
 @Index(['group', 'messageId'], { unique: true })
-export class Game extends DefaultNamingStrategy {
+export class Expense extends DefaultNamingStrategy {
   @PrimaryGeneratedColumn()
   public id: number;
 

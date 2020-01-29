@@ -9,7 +9,7 @@ import {
   OneToMany,
 } from 'typeorm';
 
-import { Game } from './Expense.entity';
+import { Expense } from './Expense.entity';
 import { Balance } from './Balance.entity';
 
 @Entity('user')
@@ -27,18 +27,18 @@ export class User extends DefaultNamingStrategy {
   public username?: string;
 
   @ManyToMany(
-    type => Game,
-    game => game.playUsers,
+    type => Expense,
+    expense => expense.playUsers,
     { nullable: true },
   )
-  public playGames: Game[];
+  public playGames: Expense[];
 
   @OneToMany(
-    type => Game,
-    game => game.payBy,
+    type => Expense,
+    expense => expense.payBy,
     { nullable: true },
   )
-  public payGames: Game[];
+  public payGames: Expense[];
 
   @CreateDateColumn({ name: 'created_at' })
   public createdAt: Date;
@@ -47,11 +47,11 @@ export class User extends DefaultNamingStrategy {
   public updatedAt: Date;
 
   @OneToMany(
-    type => Game,
-    game => game.createdBy,
+    type => Expense,
+    expense => expense.createdBy,
     { nullable: true },
   )
-  public createdGames: Game[];
+  public createdGames: Expense[];
 
   @OneToMany(
     type => Balance,

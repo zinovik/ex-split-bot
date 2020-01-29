@@ -6,7 +6,7 @@ import { IMessageService } from '../message/IMessageService.interface';
 
 import { IMessageBody } from '../common/model/IMessageBody.interface';
 import { ICallbackMessageBody } from '../common/model/ICallbackMessageBody.interface';
-import { Game } from '../database/entities/Expense.entity';
+import { Expense } from '../database/entities/Expense.entity';
 
 const NEW_EXPENSE_REGEXP = '[\\d].*[?]';
 const PRICE_REGEXP = '\\[([\\d]+).*\\]';
@@ -268,7 +268,7 @@ export class Main implements IMain {
     const expenseBalances = this.getExpenseBalances(updatedExpense);
 
     await this.updateExpenseMessage({
-      expense: data === 'done' ? ({ ...updatedExpense, playUsers: expense.playUsers } as Game) : updatedExpense,
+      expense: data === 'done' ? ({ ...updatedExpense, playUsers: expense.playUsers } as Expense) : updatedExpense,
       chatId,
       messageId,
       callbackQueryId,
@@ -276,7 +276,7 @@ export class Main implements IMain {
     });
   }
 
-  private async splitExpense(expense: Game, userId: number): Promise<void> {
+  private async splitExpense(expense: Expense, userId: number): Promise<void> {
     if (expense.isDeleted || expense.isDone) {
       throw new Error("You can't play deleted or done expense");
     }
@@ -294,7 +294,7 @@ export class Main implements IMain {
     await this.databaseService.addPlayUser(expense.id, userId);
   }
 
-  private async splitAndPayExpense(expense: Game, userId: number): Promise<void> {
+  private async splitAndPayExpense(expense: Expense, userId: number): Promise<void> {
     if (expense.isDeleted || expense.isDone || expense.isFree) {
       throw new Error("You can't pay for the deleted, done or free expense");
     }
@@ -312,7 +312,7 @@ export class Main implements IMain {
     }
   }
 
-  private async freeExpense(expense: Game): Promise<void> {
+  private async freeExpense(expense: Expense): Promise<void> {
     if (expense.isDeleted || expense.isDone) {
       throw new Error("You can't set deleted or done expense free");
     }
@@ -327,7 +327,7 @@ export class Main implements IMain {
     await this.databaseService.updatePayBy(expense.id, null);
   }
 
-  private async doneExpense(expense: Game, userId: number, chatId: number): Promise<string | void> {
+  private async doneExpense(expense: Expense, userId: number, chatId: number): Promise<string | void> {
     if (expense.isDeleted || expense.isDone) {
       throw new Error("You can't finish deleted or done expense");
     }
@@ -359,7 +359,7 @@ export class Main implements IMain {
     await this.databaseService.doneExpense(expense.id);
   }
 
-  private async deleteExpense(expense: Game, userId: number, chatId: number): Promise<string | void> {
+  private async deleteExpense(expense: Expense, userId: number, chatId: number): Promise<string | void> {
     if (expense.isDeleted || expense.isDone) {
       throw new Error("You can't delete deleted or done expense");
     }
@@ -375,7 +375,7 @@ export class Main implements IMain {
     await this.databaseService.deleteExpense(expense.id);
   }
 
-  private async restoreExpense(expense: Game, userId: number, chatId: number): Promise<string | void> {
+  private async restoreExpense(expense: Expense, userId: number, chatId: number): Promise<string | void> {
     if (!expense.isDeleted || expense.isDone) {
       throw new Error("You can't restore not deleted or done expense");
     }
@@ -389,7 +389,7 @@ export class Main implements IMain {
     await this.databaseService.restoreExpense(expense.id);
   }
 
-  private async editExpense(expense: Game, userId: number, chatId: number): Promise<string | void> {
+  private async editExpense(expense: Expense, userId: number, chatId: number): Promise<string | void> {
     if (expense.isDeleted || !expense.isDone) {
       throw new Error("You can't edit deleted or not done expense");
     }
@@ -462,7 +462,7 @@ export class Main implements IMain {
     callbackQueryId,
     expenseBalances,
   }: {
-    expense: Game;
+    expense: Expense;
     chatId: number;
     messageId: number;
     callbackQueryId: string;
