@@ -106,3 +106,13 @@ KUBECONFIG=~/Downloads/okteto-kube.config kubectl logs service/app -f
 ### 2.5. update deployment on the Kubernetes Okteto service
 
 KUBECONFIG=~/Downloads/okteto-kube.config kubectl rollout restart deployment.apps/ex-split-bot
+
+## P. S.
+
+SQL to change expense auto increment last number:
+
+```sql
+create sequence expense_id_seq;
+alter table expense alter id set default nextval('expense_id_seq');
+select setval('expense_id_seq', 99, true);
+```

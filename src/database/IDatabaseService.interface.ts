@@ -9,7 +9,7 @@ export interface IDatabaseService {
     chatUsername?: string;
     firstName?: string;
     lastName?: string;
-  }): Promise<void>;
+  }): Promise<{ defaultPrice?: number }>;
 
   getUserBalance(userId: number, chatId: number): Promise<number>;
   setUserBalance(userId: number, chatId: number, balance: number): Promise<void>;

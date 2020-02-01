@@ -45,16 +45,13 @@ export class PostgresService implements IDatabaseService {
     chatUsername?: string;
     firstName?: string;
     lastName?: string;
-  }): Promise<void> {
+  }): Promise<{ defaultPrice?: number }> {
     const connection = await this.getConnectionPromise;
 
     const group = new Group();
     group.id = String(chatId);
     group.username = chatUsername;
-    // group.defaultExpense = '';
-    // group.defaultPrice = 0;
-    // group.defaultAction = '';
-    await connection.getRepository(Group).save(group);
+    const { defaultPrice } = await connection.getRepository(Group).save(group);
 
     const user = new User();
     user.id = userId;
@@ -67,6 +64,8 @@ export class PostgresService implements IDatabaseService {
     balance.user = user;
     balance.group = group;
     await connection.getRepository(Balance).save(balance);
+
+    return { defaultPrice };
   }
 
   async getUserBalance(userId: number, chatId: number): Promise<number> {

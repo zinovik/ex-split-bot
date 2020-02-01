@@ -49,7 +49,7 @@ export class Main implements IMain {
   }
 
   private async processGroupMessage(messageBody: IMessageBody): Promise<void> {
-    const { defaultPrice } = this.configurationService.getConfiguration();
+    const { defaultPrice: defaultPriceCommon } = this.configurationService.getConfiguration();
 
     const {
       message: {
@@ -72,7 +72,7 @@ export class Main implements IMain {
       return;
     }
 
-    await this.databaseService.upsertUser({
+    const { defaultPrice = defaultPriceCommon } = await this.databaseService.upsertUser({
       userId,
       chatId,
       userUsername: username,

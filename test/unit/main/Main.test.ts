@@ -79,14 +79,17 @@ describe('Main', () => {
     const expenseMessageText = 'test-telegram-message-text';
     const messageId = 555;
     configurationServiceMockgGetConfiguration({ defaultPrice });
-    databaseServiceMockUpsertUser({
-      userId: user.id,
-      chatId,
-      userUsername: user.username,
-      chatUsername,
-      firstName: user.firstName,
-      lastName: user.lastName,
-    });
+    databaseServiceMockUpsertUser(
+      {
+        userId: user.id,
+        chatId,
+        userUsername: user.username,
+        chatUsername,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+      { defaultPrice: undefined },
+    );
     databaseServiceMockCreateExpense({ price: defaultPrice, userId: user.id, chatId, expense }, expenseId);
     messageServiceMockGetUserMarkdown(
       { username: user.username, firstName: user.firstName, id: user.id },
@@ -130,17 +133,20 @@ describe('Main', () => {
       .verifiable(Times.once());
   }
 
-  function databaseServiceMockUpsertUser(parameters: {
-    userId: number;
-    chatId: number;
-    userUsername?: string;
-    chatUsername?: string;
-    firstName?: string;
-    lastName?: string;
-  }): void {
+  function databaseServiceMockUpsertUser(
+    parameters: {
+      userId: number;
+      chatId: number;
+      userUsername?: string;
+      chatUsername?: string;
+      firstName?: string;
+      lastName?: string;
+    },
+    response: { defaultPrice?: number },
+  ): void {
     databaseServiceMock
       .setup((x: IDatabaseService) => x.upsertUser(parameters))
-      .returns(async () => undefined)
+      .returns(async () => response)
       .verifiable(Times.once());
   }
 
