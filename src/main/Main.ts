@@ -1,5 +1,4 @@
 import { IMain } from './IMain.interface';
-import { IConfigurationService } from '../configuration/IConfigurationService.interface';
 import { IDatabaseService } from '../database/IDatabaseService.interface';
 import { ITelegramService } from '../telegram/ITelegramService.interface';
 import { IMessageService } from '../message/IMessageService.interface';
@@ -14,12 +13,10 @@ const EXPENSE_REGEXP = '\\{(.*)\\}';
 
 export class Main implements IMain {
   constructor(
-    private readonly configurationService: IConfigurationService,
     private readonly databaseService: IDatabaseService,
     private readonly telegramService: ITelegramService,
     private readonly messageService: IMessageService,
   ) {
-    this.configurationService = configurationService;
     this.databaseService = databaseService;
     this.telegramService = telegramService;
     this.messageService = messageService;
@@ -49,8 +46,6 @@ export class Main implements IMain {
   }
 
   private async processGroupMessage(messageBody: IMessageBody): Promise<void> {
-    const { defaultPrice: defaultPriceCommon } = this.configurationService.getConfiguration();
-
     const {
       message: {
         text,
@@ -72,7 +67,7 @@ export class Main implements IMain {
       return;
     }
 
-    const { defaultPrice = defaultPriceCommon } = await this.databaseService.upsertUser({
+    const { defaultPrice } = await this.databaseService.upsertUser({
       userId,
       chatId,
       userUsername: username,
@@ -84,6 +79,11 @@ export class Main implements IMain {
     const priceRegExp = new RegExp(PRICE_REGEXP, 'gm');
     const priceMatchArray = priceRegExp.exec(messageText);
     const price = Number(priceMatchArray && priceMatchArray[1]) || defaultPrice;
+
+    if (!price) {
+      console.error('No price found!');
+      return;
+    }
 
     const expenseRegExp = new RegExp(EXPENSE_REGEXP, 'gm');
     const expenseMatchArray = expenseRegExp.exec(messageText);

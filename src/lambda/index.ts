@@ -19,9 +19,6 @@ exports.handler = async ({ body, queryStringParameters: { token } }: IEvent, con
   if (process.env.DATABASE_URL === undefined) {
     throw new ConfigParameterNotDefinedError('DATABASE_URL');
   }
-  if (process.env.DEFAULT_PRICE === undefined) {
-    throw new ConfigParameterNotDefinedError('DEFAULT_PRICE');
-  }
   if (process.env.APP_TOKEN === undefined) {
     throw new ConfigParameterNotDefinedError('APP_TOKEN');
   }
@@ -38,12 +35,7 @@ exports.handler = async ({ body, queryStringParameters: { token } }: IEvent, con
 
   const postgresService = new PostgresService(process.env.DATABASE_URL);
 
-  const main = new Main(
-    new ConfigurationService(Number(process.env.DEFAULT_PRICE)),
-    postgresService,
-    new TelegramService(process.env.TELEGRAM_TOKEN),
-    new MessageService(),
-  );
+  const main = new Main(postgresService, new TelegramService(process.env.TELEGRAM_TOKEN), new MessageService());
 
   try {
     await main.processMessage(body);

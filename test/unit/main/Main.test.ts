@@ -1,7 +1,6 @@
 import { IMock, Mock, Times } from 'typemoq';
 
 import { Main } from '../../../src/main/Main';
-import { IConfigurationService } from '../../../src/configuration/IConfigurationService.interface';
 import { IDatabaseService } from '../../../src/database/IDatabaseService.interface';
 import { ITelegramService } from '../../../src/telegram/ITelegramService.interface';
 import { IMessageService } from '../../../src/message/IMessageService.interface';
@@ -10,7 +9,6 @@ import { IMessageBody } from '../../../src/common/model/IMessageBody.interface';
 import { IReplyMarkup } from '../../../src/common/model/IReplyMarkup.interface';
 
 describe('Main', () => {
-  let configurationServiceMock: IMock<IConfigurationService>;
   let databaseServiceMock: IMock<IDatabaseService>;
   let telegramServiceMock: IMock<ITelegramService>;
   let messageServiceMock: IMock<IMessageService>;
@@ -18,21 +16,14 @@ describe('Main', () => {
   let main: Main;
 
   beforeEach(() => {
-    configurationServiceMock = Mock.ofType<IConfigurationService>();
     databaseServiceMock = Mock.ofType<IDatabaseService>();
     telegramServiceMock = Mock.ofType<ITelegramService>();
     messageServiceMock = Mock.ofType<IMessageService>();
 
-    main = new Main(
-      configurationServiceMock.object,
-      databaseServiceMock.object,
-      telegramServiceMock.object,
-      messageServiceMock.object,
-    );
+    main = new Main(databaseServiceMock.object, telegramServiceMock.object, messageServiceMock.object);
   });
 
   afterEach(() => {
-    configurationServiceMock.verifyAll();
     databaseServiceMock.verifyAll();
     telegramServiceMock.verifyAll();
     messageServiceMock.verifyAll();
@@ -78,7 +69,6 @@ describe('Main', () => {
     };
     const expenseMessageText = 'test-telegram-message-text';
     const messageId = 555;
-    configurationServiceMockgGetConfiguration({ defaultPrice });
     databaseServiceMockUpsertUser(
       {
         userId: user.id,
@@ -88,7 +78,7 @@ describe('Main', () => {
         firstName: user.firstName,
         lastName: user.lastName,
       },
-      { defaultPrice: undefined },
+      { defaultPrice },
     );
     databaseServiceMockCreateExpense({ price: defaultPrice, userId: user.id, chatId, expense }, expenseId);
     messageServiceMockGetUserMarkdown(
@@ -125,13 +115,6 @@ describe('Main', () => {
     // Assert
     expect(true).toBeTruthy();
   });
-
-  function configurationServiceMockgGetConfiguration(configuration: { defaultPrice: number }): void {
-    configurationServiceMock
-      .setup((x: IConfigurationService) => x.getConfiguration())
-      .returns(() => configuration)
-      .verifiable(Times.once());
-  }
 
   function databaseServiceMockUpsertUser(
     parameters: {

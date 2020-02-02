@@ -32,9 +32,6 @@ if (process.env.TELEGRAM_TOKEN === undefined) {
 if (process.env.DATABASE_URL === undefined) {
   throw new ConfigParameterNotDefinedError('DATABASE_URL');
 }
-if (process.env.DEFAULT_PRICE === undefined) {
-  throw new ConfigParameterNotDefinedError('DEFAULT_PRICE');
-}
 if (process.env.APP_TOKEN === undefined) {
   throw new ConfigParameterNotDefinedError('APP_TOKEN');
 }
@@ -44,12 +41,7 @@ const PORT = Number(process.env.PORT) || 9000;
 
 const postgresService = new PostgresService(process.env.DATABASE_URL);
 
-const main = new Main(
-  new ConfigurationService(Number(process.env.DEFAULT_PRICE)),
-  postgresService,
-  new TelegramService(process.env.TELEGRAM_TOKEN),
-  new MessageService(),
-);
+const main = new Main(postgresService, new TelegramService(process.env.TELEGRAM_TOKEN), new MessageService());
 
 const api = new Api(postgresService);
 
