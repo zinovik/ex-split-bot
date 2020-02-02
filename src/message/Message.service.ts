@@ -73,7 +73,7 @@ export class MessageService implements IMessageService {
       `Game balances:` +
       `${expenseBalances.map(
         u =>
-          `\n${u.userMarkdown}: ${Number(u.expenseBalance > 0 ? u.expenseBalance + sum : u.expenseBalance).toFixed(
+          `\n${u.userMarkdown}: ${Number(u.expenseBalance > 0 ? u.expenseBalance - sum : u.expenseBalance).toFixed(
             2,
           )} BYN`,
       )}`
