@@ -69,7 +69,7 @@ export class PostgresService implements IDatabaseService {
       (await connection
         .getRepository(Group)
         .createQueryBuilder('group')
-        .select(['expense.defaultPrice'])
+        .select(['group.defaultPrice'])
         .where({ id: { chatId } })
         .getOne()) || {};
 
