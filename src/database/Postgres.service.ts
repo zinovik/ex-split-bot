@@ -51,7 +51,7 @@ export class PostgresService implements IDatabaseService {
     const group = new Group();
     group.id = String(chatId);
     group.username = chatUsername;
-    const { defaultPrice } = await connection.getRepository(Group).save(group);
+    await connection.getRepository(Group).save(group);
 
     const user = new User();
     user.id = userId;
@@ -64,6 +64,14 @@ export class PostgresService implements IDatabaseService {
     balance.user = user;
     balance.group = group;
     await connection.getRepository(Balance).save(balance);
+
+    const { defaultPrice } =
+      (await connection
+        .getRepository(Group)
+        .createQueryBuilder('group')
+        .select(['expense.defaultPrice'])
+        .where({ id: { chatId } })
+        .getOne()) || {};
 
     return { defaultPrice };
   }
