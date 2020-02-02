@@ -54,7 +54,7 @@ export class MessageService implements IMessageService {
   ): string {
     return (
       `Balances before the ${expense || DEFAULT_EXPENSE_NAME}:` +
-      `${playUsers.map(u => `\n${this.getUserMarkdown(u)}: ${u.balance.toFixed(2)} BYN`)}`
+      `${playUsers.map(u => `\n${this.getUserMarkdown(u)}: ${Number(u.balance).toFixed(2)} BYN`)}`
     );
   }
 
@@ -67,7 +67,10 @@ export class MessageService implements IMessageService {
   }
 
   private getExpenseBalances(expenseBalances: { userMarkdown: string; expenseBalance: number }[]): string {
-    return `Game balances:` + `${expenseBalances.map(u => `\n${u.userMarkdown}: ${u.expenseBalance.toFixed(2)} BYN`)}`;
+    return (
+      `Game balances:` +
+      `${expenseBalances.map(u => `\n${u.userMarkdown}: ${Number(u.expenseBalance).toFixed(2)} BYN`)}`
+    );
   }
 
   getDeletedExpenseMessageText({
