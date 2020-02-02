@@ -36,7 +36,7 @@
           const username = user.firstName || user.username || '<unknown>';
 
           const li = document.createElement('li');
-          const text = document.createTextNode(`${username}: ${user.balance} BYN`);
+          const text = document.createTextNode(`${username}: ${Number(user.balance).toFixed(2)} BYN`);
 
           li.appendChild(text);
 
