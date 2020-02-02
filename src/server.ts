@@ -7,7 +7,6 @@ import { promisify } from 'util';
 
 import { Main } from './main/Main';
 import { Api } from './api/Api';
-import { ConfigurationService } from './configuration/Configuration.service';
 import { PostgresService } from './database/Postgres.service';
 import { TelegramService } from './telegram/Telegram.service';
 import { MessageService } from './message/Message.service';

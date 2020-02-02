@@ -2,7 +2,6 @@ import * as dotenv from 'dotenv';
 
 import { ConfigParameterNotDefinedError } from '../common/error/ConfigParameterNotDefinedError';
 import { Main } from '../main/Main';
-import { ConfigurationService } from '../configuration/Configuration.service';
 import { PostgresService } from '../database/Postgres.service';
 import { TelegramService } from '../telegram/Telegram.service';
 import { MessageService } from '../message/Message.service';
