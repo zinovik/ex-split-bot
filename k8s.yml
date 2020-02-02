@@ -4,7 +4,7 @@ kind: ConfigMap
 metadata:
   name: ex-split-bot-configmap
 data:
-  default_price: '6.5'
+  default_price: '12'
 
 ---
 apiVersion: v1
