@@ -67,9 +67,16 @@ export class MessageService implements IMessageService {
   }
 
   private getExpenseBalances(expenseBalances: { userMarkdown: string; expenseBalance: number }[]): string {
+    const sum = expenseBalances.reduce((s, u) => s + Number(Number(u.expenseBalance).toFixed(2)), 0);
+
     return (
       `Game balances:` +
-      `${expenseBalances.map(u => `\n${u.userMarkdown}: ${Number(u.expenseBalance).toFixed(2)} BYN`)}`
+      `${expenseBalances.map(
+        u =>
+          `\n${u.userMarkdown}: ${Number(u.expenseBalance > 0 ? u.expenseBalance + sum : u.expenseBalance).toFixed(
+            2,
+          )} BYN`,
+      )}`
     );
   }
 
