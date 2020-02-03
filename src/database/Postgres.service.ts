@@ -76,28 +76,28 @@ export class PostgresService implements IDatabaseService {
     return { defaultPrice };
   }
 
-  async getUserBalance(userId: number, chatId: number): Promise<number> {
+  async getUserBalance(userId: number, chatId: number): Promise<string> {
     const connection = await this.getConnectionPromise;
     const balance = await connection
       .getRepository(Balance)
       .createQueryBuilder('balance')
-      .select(['balance.amount'])
+      .select(['balance.amountPrecise'])
       .where({ user: userId, group: chatId })
       .getOne();
 
-    if (balance) {
-      return balance.amount;
+    if (balance && balance.amountPrecise) {
+      return balance.amountPrecise;
     }
 
-    return 0;
+    return '0';
   }
 
-  async setUserBalance(userId: number, chatId: number, balance: number): Promise<void> {
+  async setUserBalance(userId: number, chatId: number, balance: string): Promise<void> {
     const connection = await this.getConnectionPromise;
 
     await connection
       .getRepository(Balance)
-      .update({ user: { id: userId }, group: { id: String(chatId) } }, { amount: balance });
+      .update({ user: { id: userId }, group: { id: String(chatId) } }, { amountPrecise: balance });
   }
 
   async createExpense(price: number, userId: number, chatId: number, expense: string): Promise<number> {
@@ -152,7 +152,7 @@ export class PostgresService implements IDatabaseService {
         'playUsers.username',
         'playUsers.firstName',
         'playUsers.lastName',
-        'balances.amount',
+        'balances.amountPrecise',
       ])
       .leftJoin('expense.createdBy', 'createdBy')
       .leftJoin('expense.payBy', 'payBy')
@@ -228,10 +228,10 @@ export class PostgresService implements IDatabaseService {
     const users = await connection
       .getRepository(User)
       .createQueryBuilder('user')
-      .select(['user.username', 'user.firstName', 'user.lastName', 'balances.amount', 'group.username'])
+      .select(['user.username', 'user.firstName', 'user.lastName', 'balances.amountPrecise', 'group.username'])
       .leftJoin('user.balances', 'balances')
       .innerJoin('balances.group', 'group', 'group.username = :chatUsername', { chatUsername })
-      .orderBy('balances.amount', 'DESC')
+      .orderBy('balances.amountPrecise', 'DESC')
       .getMany();
 
     return users;

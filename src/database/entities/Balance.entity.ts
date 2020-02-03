@@ -18,7 +18,10 @@ import { Group } from './Group.entity';
 @Index(['user', 'group'], { unique: true })
 export class Balance extends DefaultNamingStrategy {
   @Column('decimal')
-  public amount: number;
+  public amount: number; // DEPRECATED!
+
+  @Column('text', { name: 'amount_precise', nullable: true })
+  public amountPrecise?: string;
 
   @CreateDateColumn({ name: 'created_at' })
   public createdAt: Date;
@@ -44,6 +47,6 @@ export class Balance extends DefaultNamingStrategy {
 
   @BeforeInsert()
   public async beforeInsert(): Promise<void> {
-    this.amount = 0;
+    this.amountPrecise = '0';
   }
 }

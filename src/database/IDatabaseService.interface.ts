@@ -11,8 +11,8 @@ export interface IDatabaseService {
     lastName?: string;
   }): Promise<{ defaultPrice?: number }>;
 
-  getUserBalance(userId: number, chatId: number): Promise<number>;
-  setUserBalance(userId: number, chatId: number, balance: number): Promise<void>;
+  getUserBalance(userId: number, chatId: number): Promise<string>;
+  setUserBalance(userId: number, chatId: number, balance: string): Promise<void>;
 
   createExpense(price: number, userId: number, chatId: number, expense: string): Promise<number>;
   addExpenseMessageId(expenseId: number, messageId: number): Promise<void>;

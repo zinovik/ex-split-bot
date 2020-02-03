@@ -29,21 +29,21 @@
         const ulDebtors = document.createElement('ul');
 
         users.forEach(user => {
-          if (!user.balance) {
+          if (user.balance === '0') {
             return;
           }
 
           const username = user.firstName || user.username || '<unknown>';
 
           const li = document.createElement('li');
-          const text = document.createTextNode(`${username}: ${Number(user.balance).toFixed(2)} BYN`);
+          const text = document.createTextNode(`${username}: ${user.balance} BYN`);
 
           li.appendChild(text);
 
-          if (user.balance > 0) {
-            ulLenders.appendChild(li);
-          } else {
+          if (user.balance[0] === '-') {
             ulDebtors.insertBefore(li, ulDebtors.firstChild);
+          } else {
+            ulLenders.appendChild(li);
           }
         });
 

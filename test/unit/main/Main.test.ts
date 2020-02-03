@@ -41,7 +41,7 @@ describe('Main', () => {
       username: 'test-username',
     };
     const chatId = 789456123;
-    const balance = 999;
+    const balance = '999';
     const userMarkdown = 'test-user-markdown';
     const replyMarkup = 'test-reply-markup';
     const expense = 'test-expense';
@@ -155,7 +155,7 @@ describe('Main', () => {
 
   function databaseServiceMockGetUserBalance(
     { userId, chatId }: { userId: number; chatId: number },
-    balance: number,
+    balance: string,
   ): void {
     databaseServiceMock
       .setup((x: IDatabaseService) => x.getUserBalance(userId, chatId))

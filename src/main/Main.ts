@@ -1,3 +1,5 @@
+import Fraction from 'fraction.js';
+
 import { IMain } from './IMain.interface';
 import { IDatabaseService } from '../database/IDatabaseService.interface';
 import { ITelegramService } from '../telegram/ITelegramService.interface';
@@ -118,7 +120,7 @@ export class Main implements IMain {
     userId: number;
     username?: string;
     firstName?: string;
-    userBalance: number;
+    userBalance: string;
     chatId: number;
     price: number;
     expense: string;
@@ -131,7 +133,7 @@ export class Main implements IMain {
       createdByUserMarkdown: userMarkdown,
       playUsers: [{ username, firstName, id: userId, balance: userBalance }],
       payByUserMarkdown: userMarkdown,
-      expenseBalances: [{ userMarkdown, expenseBalance: 0 }],
+      expenseBalances: [{ userMarkdown, expenseBalance: '0' }],
       expense,
     });
 
@@ -351,7 +353,9 @@ export class Main implements IMain {
         await this.databaseService.setUserBalance(
           expense.playUsers[i].id,
           chatId,
-          Number(expense.playUsers[i].balances[0].amount) + expenseBalances[i].expenseBalance,
+          new Fraction(expense.playUsers[i].balances[0].amountPrecise as string)
+            .add(expenseBalances[i].expenseBalance)
+            .toString(),
         );
       }
     }
@@ -411,7 +415,9 @@ export class Main implements IMain {
         await this.databaseService.setUserBalance(
           expense.playUsers[i].id,
           chatId,
-          Number(expense.playUsers[i].balances[0].amount) - expenseBalances[i].expenseBalance,
+          new Fraction(expense.playUsers[i].balances[0].amountPrecise as string)
+            .sub(expenseBalances[i].expenseBalance)
+            .toString(),
         );
       }
     }
@@ -429,26 +435,26 @@ export class Main implements IMain {
     playUsers: { username?: string; firstName?: string; id: number }[];
     price: number;
     payBy?: { id: number } | null;
-  }): { id: number; userMarkdown: string; expenseBalance: number }[] {
+  }): { id: number; userMarkdown: string; expenseBalance: string }[] {
     if (isFree || !payBy) {
       return [];
     }
 
-    const expenseCost = price / playUsers.length;
+    const expenseCost = new Fraction(price).div(playUsers.length);
 
     const expenseBalances = playUsers.map(u => {
-      let userExpenseBalance = 0;
+      let userExpenseBalance = new Fraction(0);
 
       if (payBy.id === u.id) {
-        userExpenseBalance += price;
+        userExpenseBalance = new Fraction(price);
       }
 
-      userExpenseBalance -= expenseCost;
+      userExpenseBalance = userExpenseBalance.sub(expenseCost);
 
       return {
         id: u.id,
         userMarkdown: this.messageService.getUserMarkdown(u),
-        expenseBalance: userExpenseBalance,
+        expenseBalance: userExpenseBalance.toString(),
       };
     });
 
@@ -466,7 +472,7 @@ export class Main implements IMain {
     chatId: number;
     messageId: number;
     callbackQueryId: string;
-    expenseBalances: { userMarkdown: string; expenseBalance: number }[];
+    expenseBalances: { userMarkdown: string; expenseBalance: string }[];
   }): Promise<string | void> {
     const text = expense.isDeleted
       ? this.messageService.getDeletedExpenseMessageText({
@@ -477,7 +483,7 @@ export class Main implements IMain {
       : this.messageService.getMessageText({
           expenseId: expense.id,
           createdByUserMarkdown: this.messageService.getUserMarkdown(expense.createdBy),
-          playUsers: expense.playUsers.map(u => ({ ...u, balance: u.balances[0].amount })),
+          playUsers: expense.playUsers.map(u => ({ ...u, balance: u.balances[0].amountPrecise as string })),
           payByUserMarkdown: expense.payBy ? this.messageService.getUserMarkdown(expense.payBy) : '',
           isFree: expense.isFree,
           price: expense.price,

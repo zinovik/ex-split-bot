@@ -37,7 +37,7 @@ exports.handler = async (event: IEvent, context: never) => {
     result: 'success',
     users: users.map(u => ({
       ...u,
-      balance: u.balances[0] ? Number(u.balances[0].amount) : 0,
+      balance: u.balances[0] ? u.balances[0].amountPrecise : 0,
       balances: undefined,
     })),
   };

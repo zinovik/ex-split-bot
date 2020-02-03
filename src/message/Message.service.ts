@@ -21,11 +21,11 @@ export class MessageService implements IMessageService {
   }: {
     expenseId: number;
     createdByUserMarkdown: string;
-    playUsers: { username?: string; firstName?: string; id: number; balance: number }[];
+    playUsers: { username?: string; firstName?: string; id: number; balance: string }[];
     payByUserMarkdown: string;
     isFree?: boolean;
     price?: number;
-    expenseBalances: { userMarkdown: string; expenseBalance: number }[];
+    expenseBalances: { userMarkdown: string; expenseBalance: string }[];
     expense?: string;
   }): string {
     return (
@@ -49,12 +49,12 @@ export class MessageService implements IMessageService {
   }
 
   private getBalancesBeforeExpense(
-    playUsers: { username?: string; firstName?: string; id: number; balance: number }[],
+    playUsers: { username?: string; firstName?: string; id: number; balance: string }[],
     expense?: string,
   ): string {
     return (
       `Balances before the ${expense || DEFAULT_EXPENSE_NAME}:` +
-      `${playUsers.map(u => `\n${this.getUserMarkdown(u)}: ${Number(u.balance).toFixed(2)} BYN`)}`
+      `${playUsers.map(u => `\n${this.getUserMarkdown(u)}: ${u.balance} BYN`)}`
     );
   }
 
@@ -66,11 +66,8 @@ export class MessageService implements IMessageService {
     return `pay: ${payByUserMarkdown}`;
   }
 
-  private getExpenseBalances(expenseBalances: { userMarkdown: string; expenseBalance: number }[]): string {
-    return (
-      `Game balances:` +
-      `${expenseBalances.map(u => `\n${u.userMarkdown}: ${Number(u.expenseBalance).toFixed(2)} BYN`)}`
-    );
+  private getExpenseBalances(expenseBalances: { userMarkdown: string; expenseBalance: string }[]): string {
+    return `Game balances:` + `${expenseBalances.map(u => `\n${u.userMarkdown}: ${u.expenseBalance} BYN`)}`;
   }
 
   getDeletedExpenseMessageText({

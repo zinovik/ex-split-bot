@@ -105,7 +105,7 @@ const server = http.createServer((req, res) => {
           result: 'success',
           users: users.map(u => ({
             ...u,
-            balance: u.balances[0] ? Number(u.balances[0].amount) : 0,
+            balance: u.balances[0] && u.balances[0].amountPrecise,
             balances: undefined,
           })),
         };

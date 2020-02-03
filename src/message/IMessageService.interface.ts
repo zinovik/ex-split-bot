@@ -6,11 +6,11 @@ export interface IMessageService {
   getMessageText(parameters: {
     expenseId: number;
     createdByUserMarkdown: string;
-    playUsers: { username?: string; firstName?: string; id: number; balance: number }[];
+    playUsers: { username?: string; firstName?: string; id: number; balance: string }[];
     payByUserMarkdown: string;
     isFree?: boolean;
     price?: number;
-    expenseBalances: { userMarkdown: string; expenseBalance: number }[];
+    expenseBalances: { userMarkdown: string; expenseBalance: string }[];
     expense?: string;
   }): string;
 
