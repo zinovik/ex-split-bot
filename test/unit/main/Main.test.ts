@@ -92,7 +92,7 @@ describe('Main', () => {
         createdByUserMarkdown: userMarkdown,
         playUsers: [{ username: user.username, firstName: user.firstName, id: user.id, balance }],
         payByUserMarkdown: userMarkdown,
-        expenseBalances: [{ userMarkdown, expenseBalance: 0 }],
+        expenseBalances: [{ userMarkdown, expenseBalance: '0' }],
         price: defaultPrice,
         expense,
       },
@@ -167,9 +167,9 @@ describe('Main', () => {
     parameters: {
       expenseId: number;
       createdByUserMarkdown: string;
-      playUsers: { username?: string; firstName?: string; id: number; balance: number }[];
+      playUsers: { username?: string; firstName?: string; id: number; balance: string }[];
       payByUserMarkdown: string;
-      expenseBalances: { userMarkdown: string; expenseBalance: number }[];
+      expenseBalances: { userMarkdown: string; expenseBalance: string }[];
       price?: number;
       expense?: string;
     },

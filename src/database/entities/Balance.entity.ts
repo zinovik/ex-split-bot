@@ -17,9 +17,6 @@ import { Group } from './Group.entity';
 @Entity('balance')
 @Index(['user', 'group'], { unique: true })
 export class Balance extends DefaultNamingStrategy {
-  @Column('decimal')
-  public amount: number; // DEPRECATED!
-
   @Column('text', { name: 'amount_precise', nullable: true })
   public amountPrecise?: string;
 
