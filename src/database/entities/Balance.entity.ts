@@ -17,8 +17,8 @@ import { Group } from './Group.entity';
 @Entity('balance')
 @Index(['user', 'group'], { unique: true })
 export class Balance extends DefaultNamingStrategy {
-  @Column('text', { name: 'amount_precise', nullable: true })
-  public amountPrecise?: string;
+  @Column('text', { name: 'amount_precise' })
+  public amountPrecise: string;
 
   @CreateDateColumn({ name: 'created_at' })
   public createdAt: Date;

@@ -1,4 +1,5 @@
 import * as url from 'url';
+import Fraction from 'fraction.js';
 import { createConnection, Connection } from 'typeorm';
 
 import { IDatabaseService } from './IDatabaseService.interface';
@@ -222,7 +223,9 @@ export class PostgresService implements IDatabaseService {
     await connection.getRepository(Expense).update(expenseId, { isDeleted: false });
   }
 
-  async getUsers(chatUsername: string): Promise<User[]> {
+  async getUsers(
+    chatUsername: string,
+  ): Promise<{ firstName?: string; username?: string; lastName?: string; balance: string }[]> {
     const connection = await this.getConnectionPromise;
 
     const users = await connection
@@ -231,10 +234,20 @@ export class PostgresService implements IDatabaseService {
       .select(['user.username', 'user.firstName', 'user.lastName', 'balances.amountPrecise', 'group.username'])
       .leftJoin('user.balances', 'balances')
       .innerJoin('balances.group', 'group', 'group.username = :chatUsername', { chatUsername })
-      .orderBy('balances.amountPrecise', 'DESC')
       .getMany();
 
-    return users;
+    users.sort((user1, user2) => {
+      const user1balance = user1.balances[0] ? user1.balances[0].amountPrecise : '0';
+      const user2balance = user2.balances[0] ? user2.balances[0].amountPrecise : '0';
+
+      return new Fraction(user2balance).sub(new Fraction(user1balance)).valueOf();
+    });
+
+    return users.map(u => ({
+      ...u,
+      balance: u.balances[0] ? u.balances[0].amountPrecise : '0',
+      balances: undefined,
+    }));
   }
 
   async getGroupsNames(): Promise<string[]> {

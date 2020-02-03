@@ -93,7 +93,7 @@ const server = http.createServer((req, res) => {
       } else if (route === '/users') {
         const { group } = queryStringParameters;
 
-        let users: User[] = [];
+        let users: { firstName?: string; username?: string; lastName?: string; balance: string }[] = [];
 
         try {
           users = group ? await api.getUsers(group as string) : [];
@@ -103,11 +103,7 @@ const server = http.createServer((req, res) => {
 
         const body = {
           result: 'success',
-          users: users.map(u => ({
-            ...u,
-            balance: u.balances[0] && u.balances[0].amountPrecise,
-            balances: undefined,
-          })),
+          users,
         };
 
         res.setHeader('Content-Type', 'application/json');

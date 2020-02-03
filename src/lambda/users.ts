@@ -17,7 +17,7 @@ exports.handler = async (event: IEvent, context: never) => {
 
   const api = new Api(postgresService);
 
-  let users: User[] = [];
+  let users: { firstName?: string; username?: string; lastName?: string; balance: string }[] = [];
 
   const chatUsername = event.queryStringParameters.group;
 
@@ -35,11 +35,7 @@ exports.handler = async (event: IEvent, context: never) => {
 
   const body = {
     result: 'success',
-    users: users.map(u => ({
-      ...u,
-      balance: u.balances[0] ? u.balances[0].amountPrecise : 0,
-      balances: undefined,
-    })),
+    users,
   };
 
   return {

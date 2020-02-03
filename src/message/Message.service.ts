@@ -45,7 +45,7 @@ export class MessageService implements IMessageService {
   private getExpenseCreated(createdByUserMarkdown: string, isFree: boolean, price: number, expense?: string): string {
     return `${createdByUserMarkdown} invites to ${expense ? 'split expenses' : DEFAULT_SPLIT_NAME}${
       isFree ? ' for FREE' : ''
-    }!${isFree ? '' : `\n${expense || DEFAULT_EXPENSE_NAME} price: ${Number(price).toFixed(2)} BYN`}`;
+    }!${isFree ? '' : `\n${expense || DEFAULT_EXPENSE_NAME} price: ${price} BYN`}`;
   }
 
   private getBalancesBeforeExpense(
