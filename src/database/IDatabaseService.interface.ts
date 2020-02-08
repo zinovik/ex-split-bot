@@ -1,5 +1,4 @@
 import { Expense } from './entities/Expense.entity';
-import { User } from './entities/User.entity';
 
 export interface IDatabaseService {
   upsertUser(parameters: {
@@ -9,7 +8,9 @@ export interface IDatabaseService {
     chatUsername?: string;
     firstName?: string;
     lastName?: string;
-  }): Promise<{ defaultPrice?: number }>;
+  }): Promise<void>;
+
+  getGroupDefaults(chatId: number): Promise<{ defaultPrice?: number }>;
 
   getUserBalance(userId: number, chatId: number): Promise<string>;
   setUserBalance(userId: number, chatId: number, balance: string): Promise<void>;

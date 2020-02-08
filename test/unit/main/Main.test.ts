@@ -20,7 +20,11 @@ describe('Main', () => {
     telegramServiceMock = Mock.ofType<ITelegramService>();
     messageServiceMock = Mock.ofType<IMessageService>();
 
-    main = new Main(databaseServiceMock.object, telegramServiceMock.object, messageServiceMock.object);
+    const configuration = {
+      publicUrl: 'test-public-url',
+    };
+
+    main = new Main(configuration, databaseServiceMock.object, telegramServiceMock.object, messageServiceMock.object);
   });
 
   afterEach(() => {
@@ -69,17 +73,15 @@ describe('Main', () => {
     };
     const expenseMessageText = 'test-telegram-message-text';
     const messageId = 555;
-    databaseServiceMockUpsertUser(
-      {
-        userId: user.id,
-        chatId,
-        userUsername: user.username,
-        chatUsername,
-        firstName: user.firstName,
-        lastName: user.lastName,
-      },
-      { defaultPrice },
-    );
+    databaseServiceMockUpsertUser({
+      userId: user.id,
+      chatId,
+      userUsername: user.username,
+      chatUsername,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    });
+    databaseServiceMockGetGroupDefaults(chatId, { defaultPrice });
     databaseServiceMockCreateExpense({ price: defaultPrice, userId: user.id, chatId, expense }, expenseId);
     messageServiceMockGetUserMarkdown(
       { username: user.username, firstName: user.firstName, id: user.id },
@@ -116,20 +118,24 @@ describe('Main', () => {
     expect(true).toBeTruthy();
   });
 
-  function databaseServiceMockUpsertUser(
-    parameters: {
-      userId: number;
-      chatId: number;
-      userUsername?: string;
-      chatUsername?: string;
-      firstName?: string;
-      lastName?: string;
-    },
-    response: { defaultPrice?: number },
-  ): void {
+  function databaseServiceMockUpsertUser(parameters: {
+    userId: number;
+    chatId: number;
+    userUsername?: string;
+    chatUsername?: string;
+    firstName?: string;
+    lastName?: string;
+  }): void {
     databaseServiceMock
       .setup((x: IDatabaseService) => x.upsertUser(parameters))
-      .returns(async () => response)
+      .returns(async () => undefined)
+      .verifiable(Times.once());
+  }
+
+  function databaseServiceMockGetGroupDefaults(chatId: number, { defaultPrice }: { defaultPrice?: number }): void {
+    databaseServiceMock
+      .setup((x: IDatabaseService) => x.getGroupDefaults(chatId))
+      .returns(async () => Promise.resolve({ defaultPrice }))
       .verifiable(Times.once());
   }
 

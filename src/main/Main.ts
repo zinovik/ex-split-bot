@@ -1,6 +1,7 @@
 import Fraction from 'fraction.js';
 
 import { IMain } from './IMain.interface';
+import { IConfiguration } from './IConfiguration.interface';
 import { IDatabaseService } from '../database/IDatabaseService.interface';
 import { ITelegramService } from '../telegram/ITelegramService.interface';
 import { IMessageService } from '../message/IMessageService.interface';
@@ -12,13 +13,17 @@ import { Expense } from '../database/entities/Expense.entity';
 const NEW_EXPENSE_REGEXP = '[\\d].*[?]';
 const PRICE_REGEXP = '\\[([\\d]+).*\\]';
 const EXPENSE_REGEXP = '\\{(.*)\\}';
+const BALANCES_REGEXP = 'balances';
+// const DEFAULT_PRICE_REGEXP = '\\[([\\d]+).*\\]';
 
 export class Main implements IMain {
   constructor(
+    private readonly configuration: IConfiguration,
     private readonly databaseService: IDatabaseService,
     private readonly telegramService: ITelegramService,
     private readonly messageService: IMessageService,
   ) {
+    this.configuration = configuration;
     this.databaseService = databaseService;
     this.telegramService = telegramService;
     this.messageService = messageService;
@@ -61,15 +66,30 @@ export class Main implements IMain {
       return;
     }
 
-    const messageText = text.trim().toLowerCase();
+    const messageText = text.trim();
 
-    const playRegExp = new RegExp(NEW_EXPENSE_REGEXP, 'gm');
+    const balancesRegExp = new RegExp(BALANCES_REGEXP, 'gmi');
+    if (balancesRegExp.test(messageText)) {
+      const text = chatUsername
+        ? `${this.configuration.publicUrl}/group=${chatUsername}` || 'No url set up!'
+        : 'Make group public to get a link!';
+
+      await this.telegramService.sendMessage({
+        text,
+        chatId,
+        replyMarkup: '',
+      });
+
+      return;
+    }
+
+    const playRegExp = new RegExp(NEW_EXPENSE_REGEXP, 'gmi');
     if (!playRegExp.test(messageText)) {
       console.error('No keyword found!');
       return;
     }
 
-    const { defaultPrice } = await this.databaseService.upsertUser({
+    await this.databaseService.upsertUser({
       userId,
       chatId,
       userUsername: username,
@@ -78,13 +98,19 @@ export class Main implements IMain {
       lastName,
     });
 
-    const priceRegExp = new RegExp(PRICE_REGEXP, 'gm');
+    const priceRegExp = new RegExp(PRICE_REGEXP, 'gmi');
     const priceMatchArray = priceRegExp.exec(messageText);
-    const price = Number(priceMatchArray && priceMatchArray[1]) || defaultPrice;
+    let price = Number(priceMatchArray && priceMatchArray[1]);
 
     if (!price) {
-      console.error('No price found!');
-      return;
+      const { defaultPrice } = await this.databaseService.getGroupDefaults(chatId);
+
+      if (!defaultPrice) {
+        console.error('No price found!');
+        return;
+      }
+
+      price = defaultPrice;
     }
 
     const expenseRegExp = new RegExp(EXPENSE_REGEXP, 'gm');

@@ -40,7 +40,16 @@ const PORT = Number(process.env.PORT) || 9000;
 
 const postgresService = new PostgresService(process.env.DATABASE_URL);
 
-const main = new Main(postgresService, new TelegramService(process.env.TELEGRAM_TOKEN), new MessageService());
+const configuration = {
+  publicUrl: process.env.PUBLIC_URL,
+};
+
+const main = new Main(
+  configuration,
+  postgresService,
+  new TelegramService(process.env.TELEGRAM_TOKEN),
+  new MessageService(),
+);
 
 const api = new Api(postgresService);
 

@@ -1,5 +1,13 @@
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ex-split-bot-configmap
+data:
+  public_url: 'https://app-ex-split-bot-zinovik.cloud.okteto.net'
+
+---
+apiVersion: v1
 kind: Secret
 metadata:
   name: ex-split-bot-secret
@@ -78,6 +86,11 @@ spec:
         - image: zinovik/ex-split-bot:stable
           name: ex-split-bot
           env:
+            - name: PUBLIC_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ex-split-bot-configmap
+                  key: public_url
             - name: TELEGRAM_TOKEN
               valueFrom:
                 secretKeyRef:
