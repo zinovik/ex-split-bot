@@ -6,21 +6,22 @@ export interface IMessageService {
   getMessageText(parameters: {
     expenseId: number;
     createdByUserMarkdown: string;
-    playUsers: { username?: string; firstName?: string; id: number; balance: string }[];
+    splitUsers: { username?: string; firstName?: string; id: number; balance: string }[];
     payByUserMarkdown: string;
     isFree?: boolean;
     price?: number;
     expenseBalances: { userMarkdown: string; expenseBalance: string }[];
-    expense?: string;
+    expenseName: string;
+    actionName: string;
   }): string;
 
   getDeletedExpenseMessageText(parameters: {
     expenseId: number;
     createdByUserMarkdown: string;
-    expense?: string;
+    expenseName: string;
   }): string;
 
-  getReplyMarkup(isFree?: boolean): IReplyMarkup;
+  getReplyMarkup(parameters: { actionName: string; isFree?: boolean }): IReplyMarkup;
   getDoneExpenseReplyMarkup(): IReplyMarkup;
   getDeletedExpenseReplyMarkup(): IReplyMarkup;
 }

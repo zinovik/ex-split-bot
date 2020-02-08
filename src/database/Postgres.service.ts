@@ -67,18 +67,20 @@ export class PostgresService implements IDatabaseService {
     await connection.getRepository(Balance).save(balance);
   }
 
-  async getGroupDefaults(chatId: number): Promise<{ defaultPrice?: number }> {
+  async getGroupDefaults(
+    chatId: number,
+  ): Promise<{ defaultPrice?: number | null; defaultExpenseName?: string | null; defaultActionName?: string | null }> {
     const connection = await this.getConnectionPromise;
 
-    const { defaultPrice } =
+    const { defaultPrice, defaultExpense, defaultAction } =
       (await connection
         .getRepository(Group)
         .createQueryBuilder('group')
-        .select(['group.defaultPrice'])
+        .select(['group.defaultPrice', 'group.defaultExpense', 'group.defaultAction'])
         .where({ id: chatId })
         .getOne()) || {};
 
-    return { defaultPrice };
+    return { defaultPrice, defaultExpenseName: defaultExpense, defaultActionName: defaultAction };
   }
 
   async getUserBalance(userId: number, chatId: number): Promise<string> {
@@ -105,11 +107,11 @@ export class PostgresService implements IDatabaseService {
       .update({ user: { id: userId }, group: { id: String(chatId) } }, { amountPrecise: balance });
   }
 
-  async createExpense(price: number, userId: number, chatId: number, expense: string): Promise<number> {
+  async createExpense(price: number, userId: number, chatId: number, expenseName: string): Promise<number> {
     const connection = await this.getConnectionPromise;
     const a = await connection.getRepository(Expense).insert({
       price,
-      expense,
+      expense: expenseName,
       isFree: false,
       isDone: false,
       isDeleted: false,
@@ -225,6 +227,11 @@ export class PostgresService implements IDatabaseService {
   async restoreExpense(expenseId: number): Promise<void> {
     const connection = await this.getConnectionPromise;
     await connection.getRepository(Expense).update(expenseId, { isDeleted: false });
+  }
+
+  async setDefaultPrice(chatId: number, defaultPrice: number): Promise<void> {
+    const connection = await this.getConnectionPromise;
+    await connection.getRepository(Group).update(chatId, { defaultPrice });
   }
 
   async getUsers(

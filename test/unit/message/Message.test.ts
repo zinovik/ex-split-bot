@@ -46,10 +46,11 @@ describe('Message', () => {
 
   it('Should return reply markup', async () => {
     // Arrange
+    const testAction = 'test-action';
     const initialReplyMarkup = {
       inline_keyboard: [
-        [{ text: 'play | not play and not pay', callback_data: 'split | not split and not pay' }],
-        [{ text: 'play and pay | not pay', callback_data: 'split and pay | not pay' }],
+        [{ text: `${testAction} | not ${testAction} and not pay`, callback_data: 'split | not split and not pay' }],
+        [{ text: `${testAction} and pay | not pay`, callback_data: 'split and pay | not pay' }],
         [
           { text: 'free', callback_data: 'free' },
           { text: 'done', callback_data: 'done' },
@@ -59,7 +60,7 @@ describe('Message', () => {
     };
 
     // Act
-    const replyMarkup = messageService.getReplyMarkup();
+    const replyMarkup = messageService.getReplyMarkup({ action: testAction });
 
     // Assert
     expect(replyMarkup).toEqual(initialReplyMarkup);

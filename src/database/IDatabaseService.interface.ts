@@ -10,12 +10,14 @@ export interface IDatabaseService {
     lastName?: string;
   }): Promise<void>;
 
-  getGroupDefaults(chatId: number): Promise<{ defaultPrice?: number }>;
+  getGroupDefaults(
+    chatId: number,
+  ): Promise<{ defaultPrice?: number | null; defaultExpenseName?: string | null; defaultActionName?: string | null }>;
 
   getUserBalance(userId: number, chatId: number): Promise<string>;
   setUserBalance(userId: number, chatId: number, balance: string): Promise<void>;
 
-  createExpense(price: number, userId: number, chatId: number, expense: string): Promise<number>;
+  createExpense(price: number, userId: number, chatId: number, expenseName: string): Promise<number>;
   addExpenseMessageId(expenseId: number, messageId: number): Promise<void>;
 
   getExpense(chatId: number, messageId: number): Promise<Expense>;
@@ -33,6 +35,8 @@ export interface IDatabaseService {
 
   deleteExpense(expenseId: number): Promise<void>;
   restoreExpense(expenseId: number): Promise<void>;
+
+  setDefaultPrice(chatId: number, defaultPrice: number): Promise<void>;
 
   getUsers(
     chatUsername: string,

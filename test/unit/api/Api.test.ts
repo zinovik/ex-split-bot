@@ -2,7 +2,6 @@ import { IMock, Mock, Times } from 'typemoq';
 
 import { Api } from '../../../src/api/Api';
 import { IDatabaseService } from '../../../src/database/IDatabaseService.interface';
-import { User } from '../../../src/database/entities/User.entity';
 
 describe('Api', () => {
   let databaseServiceMock: IMock<IDatabaseService>;

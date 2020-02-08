@@ -1,9 +1,6 @@
 import { IMessageService } from './IMessageService.interface';
 import { IReplyMarkup } from '../common/model/IReplyMarkup.interface';
 
-const DEFAULT_EXPENSE_NAME = 'game';
-const DEFAULT_SPLIT_NAME = 'play';
-
 export class MessageService implements IMessageService {
   getUserMarkdown({ username, firstName, id }: { username?: string; firstName?: string; id: number }): string {
     return `[${firstName || username || String(id)}](tg://user?id=${String(id)})`;
@@ -12,29 +9,36 @@ export class MessageService implements IMessageService {
   getMessageText({
     expenseId,
     createdByUserMarkdown,
-    playUsers,
+    splitUsers,
     payByUserMarkdown,
     isFree = false,
     price = 0,
     expenseBalances,
-    expense,
+    expenseName,
+    actionName,
   }: {
     expenseId: number;
     createdByUserMarkdown: string;
-    playUsers: { username?: string; firstName?: string; id: number; balance: string }[];
+    splitUsers: { username?: string; firstName?: string; id: number; balance: string }[];
     payByUserMarkdown: string;
     isFree?: boolean;
     price?: number;
     expenseBalances: { userMarkdown: string; expenseBalance: string }[];
-    expense?: string;
+    expenseName: string;
+    actionName: string;
   }): string {
     return (
       `${this.getExpenseNumberText(expenseId)}\n` +
-      `${this.getExpenseCreated(createdByUserMarkdown, isFree, price, expense)}\n` +
+      `${this.getExpenseCreated(createdByUserMarkdown, isFree, price, expenseName, actionName)}\n` +
       `\n` +
-      (isFree ? '' : `${this.getBalancesBeforeExpense(playUsers, expense)}\n` + `\n`) +
-      `${this.getPlayUsers(playUsers)}` +
-      (isFree ? '' : `\n` + `${this.getPayUser(payByUserMarkdown)}\n` + `\n` + this.getExpenseBalances(expenseBalances))
+      (isFree ? '' : `${this.getBalancesBeforeExpense(splitUsers, expenseName)}\n` + `\n`) +
+      `${this.getSplitUsers(splitUsers, actionName)}` +
+      (isFree
+        ? ''
+        : `\n` +
+          `${this.getPayUser(payByUserMarkdown)}\n` +
+          `\n` +
+          this.getExpenseBalances(expenseName, expenseBalances))
     );
   }
 
@@ -42,60 +46,76 @@ export class MessageService implements IMessageService {
     return `#${expenseId}`;
   }
 
-  private getExpenseCreated(createdByUserMarkdown: string, isFree: boolean, price: number, expense?: string): string {
-    return `${createdByUserMarkdown} invites to ${expense ? 'split expenses' : DEFAULT_SPLIT_NAME}${
-      isFree ? ' for FREE' : ''
-    }!${isFree ? '' : `\n${expense || DEFAULT_EXPENSE_NAME} price: ${price} BYN`}`;
+  private getExpenseCreated(
+    createdByUserMarkdown: string,
+    isFree: boolean,
+    price: number,
+    expenseName: string,
+    actionName: string,
+  ): string {
+    return `${createdByUserMarkdown} invites to ${actionName} the ${expenseName}${isFree ? ' for FREE' : ''}!${
+      isFree ? '' : `\n${this.firstLetterUppercase(expenseName)} price: ${price} BYN`
+    }`;
   }
 
   private getBalancesBeforeExpense(
-    playUsers: { username?: string; firstName?: string; id: number; balance: string }[],
-    expense?: string,
+    splitUsers: { username?: string; firstName?: string; id: number; balance: string }[],
+    expenseName: string,
   ): string {
     return (
-      `Balances before the ${expense || DEFAULT_EXPENSE_NAME}:` +
-      `${playUsers.map(u => `\n${this.getUserMarkdown(u)}: ${u.balance} BYN`)}`
+      `Balances before the ${expenseName}:` + `${splitUsers.map(u => `\n${this.getUserMarkdown(u)}: ${u.balance} BYN`)}`
     );
   }
 
-  private getPlayUsers(playUsers: { username?: string; firstName?: string; id: number }[]): string {
-    return `play: ${playUsers.map(u => `${this.getUserMarkdown(u)}`).join(', ')}`;
+  private getSplitUsers(
+    splitUsers: { username?: string; firstName?: string; id: number }[],
+    actionName: string,
+  ): string {
+    return `${actionName}: ${splitUsers.map(u => `${this.getUserMarkdown(u)}`).join(', ')}`;
   }
 
   private getPayUser(payByUserMarkdown: string): string {
     return `pay: ${payByUserMarkdown}`;
   }
 
-  private getExpenseBalances(expenseBalances: { userMarkdown: string; expenseBalance: string }[]): string {
-    return `Game balances:` + `${expenseBalances.map(u => `\n${u.userMarkdown}: ${u.expenseBalance} BYN`)}`;
+  private getExpenseBalances(
+    expenseName: string,
+    expenseBalances: { userMarkdown: string; expenseBalance: string }[],
+  ): string {
+    return (
+      `${this.firstLetterUppercase(expenseName)} balances:` +
+      `${expenseBalances.map(u => `\n${u.userMarkdown}: ${u.expenseBalance} BYN`)}`
+    );
+  }
+
+  private firstLetterUppercase(lower: string): string {
+    return lower.charAt(0).toUpperCase() + lower.substring(1);
   }
 
   getDeletedExpenseMessageText({
     expenseId,
     createdByUserMarkdown,
-    expense,
+    expenseName,
   }: {
     expenseId: number;
     createdByUserMarkdown: string;
-    expense?: string;
+    expenseName: string;
   }): string {
-    return `${this.getExpenseNumberText(expenseId)}\n` + `Game created by ${createdByUserMarkdown} was deleted :(`;
+    return (
+      `${this.getExpenseNumberText(expenseId)}\n` + `${expenseName} created by ${createdByUserMarkdown} was deleted :(`
+    );
   }
 
-  getReplyMarkup(isFree = false): IReplyMarkup {
+  getReplyMarkup({ actionName, isFree = false }: { actionName: string; isFree?: boolean }): IReplyMarkup {
     return {
       inline_keyboard: [
         [
           {
-            text: `${DEFAULT_SPLIT_NAME} | not ${DEFAULT_SPLIT_NAME}${isFree ? '' : ' and not pay'}`,
+            text: `${actionName} | not ${actionName}${isFree ? '' : ' and not pay'}`,
             callback_data: 'split | not split and not pay',
           },
         ],
-        [
-          ...(isFree
-            ? []
-            : [{ text: `${DEFAULT_SPLIT_NAME} and pay | not pay`, callback_data: 'split and pay | not pay' }]),
-        ],
+        [...(isFree ? [] : [{ text: `${actionName} and pay | not pay`, callback_data: 'split and pay | not pay' }])],
         [
           { text: isFree ? 'not free' : 'free', callback_data: 'free' },
           { text: 'done', callback_data: 'done' },

@@ -8,6 +8,9 @@ import { IMessageService } from '../../../src/message/IMessageService.interface'
 import { IMessageBody } from '../../../src/common/model/IMessageBody.interface';
 import { IReplyMarkup } from '../../../src/common/model/IReplyMarkup.interface';
 
+const PUBLIC_API = 'test-public-url';
+const DEFAULT_ACTION_NAME = 'test-default-action';
+
 describe('Main', () => {
   let databaseServiceMock: IMock<IDatabaseService>;
   let telegramServiceMock: IMock<ITelegramService>;
@@ -21,7 +24,8 @@ describe('Main', () => {
     messageServiceMock = Mock.ofType<IMessageService>();
 
     const configuration = {
-      publicUrl: 'test-public-url',
+      publicUrl: PUBLIC_API,
+      defaultActionName: DEFAULT_ACTION_NAME,
     };
 
     main = new Main(configuration, databaseServiceMock.object, telegramServiceMock.object, messageServiceMock.object);
@@ -48,7 +52,7 @@ describe('Main', () => {
     const balance = '999';
     const userMarkdown = 'test-user-markdown';
     const replyMarkup = 'test-reply-markup';
-    const expense = 'test-expense';
+    const expenseName = 'test-expense';
     const messageBody: IMessageBody = {
       update_id: 0,
       message: {
@@ -68,7 +72,7 @@ describe('Main', () => {
           type: '',
         },
         date: 0,
-        text: `{${expense}} 1?`,
+        text: `{${expenseName}} 1?`,
       },
     };
     const expenseMessageText = 'test-telegram-message-text';
@@ -82,7 +86,7 @@ describe('Main', () => {
       lastName: user.lastName,
     });
     databaseServiceMockGetGroupDefaults(chatId, { defaultPrice });
-    databaseServiceMockCreateExpense({ price: defaultPrice, userId: user.id, chatId, expense }, expenseId);
+    databaseServiceMockCreateExpense({ price: defaultPrice, userId: user.id, chatId, expenseName }, expenseId);
     messageServiceMockGetUserMarkdown(
       { username: user.username, firstName: user.firstName, id: user.id },
       userMarkdown,
@@ -92,15 +96,19 @@ describe('Main', () => {
       {
         expenseId,
         createdByUserMarkdown: userMarkdown,
-        playUsers: [{ username: user.username, firstName: user.firstName, id: user.id, balance }],
+        splitUsers: [{ username: user.username, firstName: user.firstName, id: user.id, balance }],
         payByUserMarkdown: userMarkdown,
         expenseBalances: [{ userMarkdown, expenseBalance: '0' }],
         price: defaultPrice,
-        expense,
+        expenseName,
+        actionName: DEFAULT_ACTION_NAME,
       },
       expenseMessageText,
     );
-    messageServiceMockGetReplyMarkup(false, (replyMarkup as unknown) as IReplyMarkup);
+    messageServiceMockGetReplyMarkup(
+      { actionName: DEFAULT_ACTION_NAME, isFree: false },
+      (replyMarkup as unknown) as IReplyMarkup,
+    );
     telegramServiceMockSendMessage(
       {
         replyMarkup: JSON.stringify(replyMarkup),
@@ -132,19 +140,26 @@ describe('Main', () => {
       .verifiable(Times.once());
   }
 
-  function databaseServiceMockGetGroupDefaults(chatId: number, { defaultPrice }: { defaultPrice?: number }): void {
+  function databaseServiceMockGetGroupDefaults(
+    chatId: number,
+    {
+      defaultPrice,
+      defaultExpense,
+      defaultAction,
+    }: { defaultPrice?: number | null; defaultExpense?: string | null; defaultAction?: string | null },
+  ): void {
     databaseServiceMock
       .setup((x: IDatabaseService) => x.getGroupDefaults(chatId))
-      .returns(async () => Promise.resolve({ defaultPrice }))
+      .returns(async () => Promise.resolve({ defaultPrice, defaultExpense, defaultAction }))
       .verifiable(Times.once());
   }
 
   function databaseServiceMockCreateExpense(
-    { price, userId, chatId, expense }: { price: number; userId: number; chatId: number; expense: string },
+    { price, userId, chatId, expenseName }: { price: number; userId: number; chatId: number; expenseName: string },
     expenseId: number,
   ): void {
     databaseServiceMock
-      .setup((x: IDatabaseService) => x.createExpense(price, userId, chatId, expense))
+      .setup((x: IDatabaseService) => x.createExpense(price, userId, chatId, expenseName))
       .returns(async () => expenseId)
       .verifiable(Times.once());
   }
@@ -173,11 +188,12 @@ describe('Main', () => {
     parameters: {
       expenseId: number;
       createdByUserMarkdown: string;
-      playUsers: { username?: string; firstName?: string; id: number; balance: string }[];
+      splitUsers: { username?: string; firstName?: string; id: number; balance: string }[];
       payByUserMarkdown: string;
       expenseBalances: { userMarkdown: string; expenseBalance: string }[];
       price?: number;
-      expense?: string;
+      expenseName: string;
+      actionName: string;
     },
     expenseMessageText: string,
   ): void {
@@ -187,9 +203,12 @@ describe('Main', () => {
       .verifiable(Times.once());
   }
 
-  function messageServiceMockGetReplyMarkup(isFree: boolean, replyMarkup: IReplyMarkup): void {
+  function messageServiceMockGetReplyMarkup(
+    parameters: { actionName: string; isFree?: boolean },
+    replyMarkup: IReplyMarkup,
+  ): void {
     messageServiceMock
-      .setup((x: IMessageService) => x.getReplyMarkup(isFree))
+      .setup((x: IMessageService) => x.getReplyMarkup(parameters))
       .returns(() => replyMarkup)
       .verifiable(Times.once());
   }

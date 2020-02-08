@@ -11,10 +11,13 @@ import { ICallbackMessageBody } from '../common/model/ICallbackMessageBody.inter
 import { Expense } from '../database/entities/Expense.entity';
 
 const NEW_EXPENSE_REGEXP = '[\\d].*[?]';
-const PRICE_REGEXP = '\\[([\\d]+).*\\]';
+const PRICE_REGEXP = '\\[([\\d]+[.\\d]+).*\\]';
 const EXPENSE_REGEXP = '\\{(.*)\\}';
-const BALANCES_REGEXP = 'balances';
-// const DEFAULT_PRICE_REGEXP = '\\[([\\d]+).*\\]';
+const BALANCES_REGEXP = 'balances link';
+const SET_DEFAULT_PRICE_REGEXP = 'set default price ([\\d]+[.\\d]+)';
+
+const DEFAULT_EXPENSE_NAME = 'expense';
+const DEFAULT_ACTION_NAME = 'split';
 
 export class Main implements IMain {
   constructor(
@@ -68,7 +71,7 @@ export class Main implements IMain {
 
     const messageText = text.trim();
 
-    const balancesRegExp = new RegExp(BALANCES_REGEXP, 'gmi');
+    const balancesRegExp = new RegExp(BALANCES_REGEXP, 'i');
     if (balancesRegExp.test(messageText)) {
       const text = chatUsername
         ? `${this.configuration.publicUrl}/group=${chatUsername}` || 'No url set up!'
@@ -76,6 +79,22 @@ export class Main implements IMain {
 
       await this.telegramService.sendMessage({
         text,
+        chatId,
+        replyMarkup: '',
+      });
+
+      return;
+    }
+
+    const setDefaultPriceRegexp = new RegExp(SET_DEFAULT_PRICE_REGEXP, 'i');
+    if (setDefaultPriceRegexp.test(messageText)) {
+      const defaultPriceMatchArray = setDefaultPriceRegexp.exec(messageText);
+      const defaultPrice = Number(defaultPriceMatchArray && defaultPriceMatchArray[1]);
+
+      await this.databaseService.setDefaultPrice(chatId, defaultPrice);
+
+      await this.telegramService.sendMessage({
+        text: `Group default price is ${defaultPrice} now!`,
         chatId,
         replyMarkup: '',
       });
@@ -98,26 +117,28 @@ export class Main implements IMain {
       lastName,
     });
 
+    const { defaultPrice, defaultExpenseName, defaultActionName } = await this.databaseService.getGroupDefaults(chatId);
+
     const priceRegExp = new RegExp(PRICE_REGEXP, 'gmi');
     const priceMatchArray = priceRegExp.exec(messageText);
-    let price = Number(priceMatchArray && priceMatchArray[1]);
+    const price = Number(priceMatchArray && priceMatchArray[1]) || defaultPrice;
 
     if (!price) {
-      const { defaultPrice } = await this.databaseService.getGroupDefaults(chatId);
-
-      if (!defaultPrice) {
-        console.error('No price found!');
-        return;
-      }
-
-      price = defaultPrice;
+      console.error('No price found!');
+      return;
     }
 
     const expenseRegExp = new RegExp(EXPENSE_REGEXP, 'gm');
     const expenseMatchArray = expenseRegExp.exec(messageText);
-    const expense = (expenseMatchArray && expenseMatchArray[1]) || '';
+    const expenseName =
+      (expenseMatchArray && expenseMatchArray[1]) ||
+      defaultExpenseName ||
+      this.configuration.defaultExpenseName ||
+      DEFAULT_EXPENSE_NAME;
 
-    const expenseId = await this.databaseService.createExpense(price, userId, chatId, expense);
+    const actionName = defaultActionName || this.configuration.defaultActionName || DEFAULT_ACTION_NAME;
+
+    const expenseId = await this.databaseService.createExpense(price, userId, chatId, expenseName);
     const userBalance = await this.databaseService.getUserBalance(userId, chatId);
 
     await this.createExpenseMessage({
@@ -128,7 +149,8 @@ export class Main implements IMain {
       userBalance,
       chatId,
       price,
-      expense,
+      expenseName,
+      actionName,
     });
   }
 
@@ -140,7 +162,8 @@ export class Main implements IMain {
     userBalance,
     chatId,
     price,
-    expense,
+    expenseName,
+    actionName,
   }: {
     expenseId: number;
     userId: number;
@@ -149,7 +172,8 @@ export class Main implements IMain {
     userBalance: string;
     chatId: number;
     price: number;
-    expense: string;
+    expenseName: string;
+    actionName: string;
   }): Promise<void> {
     const userMarkdown = this.messageService.getUserMarkdown({ username, firstName, id: userId });
 
@@ -157,13 +181,14 @@ export class Main implements IMain {
       expenseId,
       price,
       createdByUserMarkdown: userMarkdown,
-      playUsers: [{ username, firstName, id: userId, balance: userBalance }],
+      splitUsers: [{ username, firstName, id: userId, balance: userBalance }],
       payByUserMarkdown: userMarkdown,
       expenseBalances: [{ userMarkdown, expenseBalance: '0' }],
-      expense,
+      expenseName,
+      actionName,
     });
 
-    const replyMarkup = this.messageService.getReplyMarkup(false);
+    const replyMarkup = this.messageService.getReplyMarkup({ actionName, isFree: false });
 
     try {
       const messageId = await this.telegramService.sendMessage({
@@ -200,6 +225,8 @@ export class Main implements IMain {
       firstName,
       lastName,
     });
+
+    const { defaultExpenseName, defaultActionName } = await this.databaseService.getGroupDefaults(chatId);
 
     const expense = await this.databaseService.getExpense(chatId, messageId);
     console.log(`Current expense: ${JSON.stringify(expense)}`);
@@ -243,7 +270,7 @@ export class Main implements IMain {
           });
         } else if (expense.payBy && expense.payBy.id !== userId) {
           await this.telegramService.sendMessage({
-            text: 'Game is free!',
+            text: `${defaultExpenseName || this.configuration.defaultExpenseName || DEFAULT_EXPENSE_NAME} is free!`,
             chatId,
             replyMarkup: '',
           });
@@ -301,6 +328,8 @@ export class Main implements IMain {
       messageId,
       callbackQueryId,
       expenseBalances,
+      defaultExpenseName: defaultExpenseName || this.configuration.defaultExpenseName || DEFAULT_EXPENSE_NAME,
+      defaultActionName: defaultActionName || this.configuration.defaultActionName || DEFAULT_ACTION_NAME,
     });
   }
 
@@ -493,35 +522,40 @@ export class Main implements IMain {
     messageId,
     callbackQueryId,
     expenseBalances,
+    defaultExpenseName,
+    defaultActionName,
   }: {
     expense: Expense;
     chatId: number;
     messageId: number;
     callbackQueryId: string;
     expenseBalances: { userMarkdown: string; expenseBalance: string }[];
+    defaultExpenseName: string;
+    defaultActionName: string;
   }): Promise<string | void> {
     const text = expense.isDeleted
       ? this.messageService.getDeletedExpenseMessageText({
           expenseId: expense.id,
           createdByUserMarkdown: this.messageService.getUserMarkdown(expense.createdBy),
-          expense: expense.expense,
+          expenseName: expense.expense || defaultExpenseName,
         })
       : this.messageService.getMessageText({
           expenseId: expense.id,
           createdByUserMarkdown: this.messageService.getUserMarkdown(expense.createdBy),
-          playUsers: expense.playUsers.map(u => ({ ...u, balance: u.balances[0].amountPrecise as string })),
+          splitUsers: expense.playUsers.map(u => ({ ...u, balance: u.balances[0].amountPrecise as string })),
           payByUserMarkdown: expense.payBy ? this.messageService.getUserMarkdown(expense.payBy) : '',
           isFree: expense.isFree,
           price: expense.price,
           expenseBalances,
-          expense: expense.expense,
+          expenseName: expense.expense || defaultExpenseName,
+          actionName: defaultActionName,
         });
 
     const replyMarkup = expense.isDeleted
       ? this.messageService.getDeletedExpenseReplyMarkup()
       : expense.isDone
       ? this.messageService.getDoneExpenseReplyMarkup()
-      : this.messageService.getReplyMarkup(expense.isFree);
+      : this.messageService.getReplyMarkup({ actionName: defaultActionName, isFree: expense.isFree });
 
     try {
       await this.telegramService.editMessageText({
