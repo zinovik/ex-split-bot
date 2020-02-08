@@ -74,7 +74,7 @@ export class Main implements IMain {
     const balancesRegExp = new RegExp(BALANCES_REGEXP, 'i');
     if (balancesRegExp.test(messageText)) {
       const text = chatUsername
-        ? `${this.configuration.publicUrl}/group=${chatUsername}` || 'No url set up!'
+        ? `${this.configuration.publicUrl}/?group=${chatUsername}` || 'No url set up!'
         : 'Make group public to get a link!';
 
       await this.telegramService.sendMessage({
