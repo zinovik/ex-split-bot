@@ -11,10 +11,10 @@ import { ICallbackMessageBody } from '../common/model/ICallbackMessageBody.inter
 import { Expense } from '../database/entities/Expense.entity';
 
 const NEW_EXPENSE_REGEXP = '[\\d].*[?]';
-const PRICE_REGEXP = '\\[([\\d]+[.\\d]+).*\\]';
+const PRICE_REGEXP = '\\[(\\d+(\\.\\d+)?).*\\]';
 const EXPENSE_REGEXP = '\\{(.*)\\}';
 const BALANCES_REGEXP = 'balances link';
-const SET_DEFAULT_PRICE_REGEXP = 'set default price ([\\d]+[.\\d]+)';
+const SET_DEFAULT_PRICE_REGEXP = 'set default price (\\d+(\\.\\d+)?)';
 const SET_DEFAULT_EXPENSE_NAME_REGEXP = 'set default expense name (.*)';
 const SET_DEFAULT_ACTION_NAME_REGEXP = 'set default action name (.*)';
 
