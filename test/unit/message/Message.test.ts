@@ -60,7 +60,7 @@ describe('Message', () => {
     };
 
     // Act
-    const replyMarkup = messageService.getReplyMarkup({ action: testAction });
+    const replyMarkup = messageService.getReplyMarkup({ actionName: testAction });
 
     // Assert
     expect(replyMarkup).toEqual(initialReplyMarkup);
