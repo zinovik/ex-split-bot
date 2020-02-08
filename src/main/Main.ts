@@ -15,6 +15,8 @@ const PRICE_REGEXP = '\\[([\\d]+[.\\d]+).*\\]';
 const EXPENSE_REGEXP = '\\{(.*)\\}';
 const BALANCES_REGEXP = 'balances link';
 const SET_DEFAULT_PRICE_REGEXP = 'set default price ([\\d]+[.\\d]+)';
+const SET_DEFAULT_EXPENSE_NAME_REGEXP = 'set default expense name (.*)';
+const SET_DEFAULT_ACTION_NAME_REGEXP = 'set default action name (.*)';
 
 const DEFAULT_EXPENSE_NAME = 'expense';
 const DEFAULT_ACTION_NAME = 'split';
@@ -95,6 +97,38 @@ export class Main implements IMain {
 
       await this.telegramService.sendMessage({
         text: `Group default price is ${defaultPrice} now!`,
+        chatId,
+        replyMarkup: '',
+      });
+
+      return;
+    }
+
+    const setDefaultExpenseNameRegexp = new RegExp(SET_DEFAULT_EXPENSE_NAME_REGEXP, 'i');
+    if (setDefaultExpenseNameRegexp.test(messageText)) {
+      const defaultExpenseNameMatchArray = setDefaultExpenseNameRegexp.exec(messageText);
+      const defaultExpenseName = defaultExpenseNameMatchArray && defaultExpenseNameMatchArray[1];
+
+      await this.databaseService.setDefaultExpenseName(chatId, defaultExpenseName);
+
+      await this.telegramService.sendMessage({
+        text: `Group default expense name is ${defaultExpenseName} now!`,
+        chatId,
+        replyMarkup: '',
+      });
+
+      return;
+    }
+
+    const setDefaultActionNameRegexp = new RegExp(SET_DEFAULT_ACTION_NAME_REGEXP, 'i');
+    if (setDefaultActionNameRegexp.test(messageText)) {
+      const defaultActionNameMatchArray = setDefaultActionNameRegexp.exec(messageText);
+      const defaultActionName = defaultActionNameMatchArray && defaultActionNameMatchArray[1];
+
+      await this.databaseService.setDefaultActionName(chatId, defaultActionName);
+
+      await this.telegramService.sendMessage({
+        text: `Group default action name is ${defaultActionName} now!`,
         chatId,
         replyMarkup: '',
       });

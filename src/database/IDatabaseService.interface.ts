@@ -37,6 +37,8 @@ export interface IDatabaseService {
   restoreExpense(expenseId: number): Promise<void>;
 
   setDefaultPrice(chatId: number, defaultPrice: number): Promise<void>;
+  setDefaultExpenseName(chatId: number, defaultExpenseName: string | null): Promise<void>;
+  setDefaultActionName(chatId: number, defaultActionName: string | null): Promise<void>;
 
   getUsers(
     chatUsername: string,
