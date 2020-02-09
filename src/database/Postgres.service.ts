@@ -153,7 +153,7 @@ export class PostgresService implements IDatabaseService {
         'expense.isFree',
         'expense.isDone',
         'expense.isDeleted',
-        'expense.expense',
+        'expense.expenseName',
         'createdBy.id',
         'createdBy.username',
         'createdBy.firstName',
