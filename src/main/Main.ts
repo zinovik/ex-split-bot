@@ -12,11 +12,13 @@ import { Expense } from '../database/entities/Expense.entity';
 
 const NEW_EXPENSE_REGEXP = '[\\d].*[?]';
 const PRICE_REGEXP = '\\[(\\d+(\\.\\d+)?).*\\]';
-const EXPENSE_REGEXP = '\\{(.*)\\}';
+const EXPENSE_NAME_REGEXP = '\\{(.*)\\}';
+const ACTION_NAME_REGEXP = '\\((.*)\\)';
 const BALANCES_REGEXP = 'balances link';
 const SET_DEFAULT_PRICE_REGEXP = 'set default price (\\d+(\\.\\d+)?)';
 const SET_DEFAULT_EXPENSE_NAME_REGEXP = 'set default expense name (.*)';
 const SET_DEFAULT_ACTION_NAME_REGEXP = 'set default action name (.*)';
+const HELP_REGEXP = 'help';
 
 const DEFAULT_EXPENSE_NAME = 'expense';
 const DEFAULT_ACTION_NAME = 'split';
@@ -81,6 +83,24 @@ export class Main implements IMain {
 
       await this.telegramService.sendMessage({
         text,
+        chatId,
+        replyMarkup: '',
+      });
+
+      return;
+    }
+
+    const commandsRegExp = new RegExp(HELP_REGEXP, 'i');
+    if (commandsRegExp.test(messageText)) {
+      await this.telegramService.sendMessage({
+        text: `Bot commands:
+1) who wants to (go) home by {taxi} for [15] BYN at 10pm?
+2) set default price 15
+3) set default expense name taxi
+4) set default action name go
+5) who wants to go home by taxi at 10pm?
+6) balance link
+7) help`,
         chatId,
         replyMarkup: '',
       });
@@ -162,17 +182,15 @@ export class Main implements IMain {
       return;
     }
 
-    const expenseRegExp = new RegExp(EXPENSE_REGEXP, 'gm');
-    const expenseMatchArray = expenseRegExp.exec(messageText);
-    const expenseName =
-      (expenseMatchArray && expenseMatchArray[1]) ||
-      defaultExpenseName ||
-      this.configuration.defaultExpenseName ||
-      DEFAULT_EXPENSE_NAME;
+    const expenseNameRegExp = new RegExp(EXPENSE_NAME_REGEXP, 'gm');
+    const expenseNameMatchArray = expenseNameRegExp.exec(messageText);
+    const expenseName = (expenseNameMatchArray && expenseNameMatchArray[1]) || undefined;
 
-    const actionName = defaultActionName || this.configuration.defaultActionName || DEFAULT_ACTION_NAME;
+    const actionNameRegExp = new RegExp(ACTION_NAME_REGEXP, 'gm');
+    const actionNameMatchArray = actionNameRegExp.exec(messageText);
+    const actionName = (actionNameMatchArray && actionNameMatchArray[1]) || undefined;
 
-    const expenseId = await this.databaseService.createExpense(price, userId, chatId, expenseName);
+    const expenseId = await this.databaseService.createExpense(price, userId, chatId, expenseName, actionName);
     const userBalance = await this.databaseService.getUserBalance(userId, chatId);
 
     await this.createExpenseMessage({
@@ -183,8 +201,8 @@ export class Main implements IMain {
       userBalance,
       chatId,
       price,
-      expenseName,
-      actionName,
+      expenseName: expenseName || defaultExpenseName || this.configuration.defaultExpenseName || DEFAULT_EXPENSE_NAME,
+      actionName: actionName || defaultActionName || this.configuration.defaultActionName || DEFAULT_ACTION_NAME,
     });
   }
 
@@ -260,10 +278,15 @@ export class Main implements IMain {
       lastName,
     });
 
-    const { defaultExpenseName, defaultActionName } = await this.databaseService.getGroupDefaults(chatId);
-
     const expense = await this.databaseService.getExpense(chatId, messageId);
     console.log(`Current expense: ${JSON.stringify(expense)}`);
+
+    const { defaultExpenseName, defaultActionName } = await this.databaseService.getGroupDefaults(chatId);
+
+    const expenseName =
+      expense.expenseName || defaultExpenseName || this.configuration.defaultExpenseName || DEFAULT_EXPENSE_NAME;
+    const actionName =
+      expense.actionName || defaultActionName || this.configuration.defaultExpenseName || DEFAULT_EXPENSE_NAME;
 
     switch (data) {
       case 'split | not split and not pay':
@@ -304,7 +327,7 @@ export class Main implements IMain {
           });
         } else if (expense.payBy && expense.payBy.id !== userId) {
           await this.telegramService.sendMessage({
-            text: `${defaultExpenseName || this.configuration.defaultExpenseName || DEFAULT_EXPENSE_NAME} is free!`,
+            text: `${expenseName} is free!`,
             chatId,
             replyMarkup: '',
           });
@@ -362,8 +385,8 @@ export class Main implements IMain {
       messageId,
       callbackQueryId,
       expenseBalances,
-      defaultExpenseName: defaultExpenseName || this.configuration.defaultExpenseName || DEFAULT_EXPENSE_NAME,
-      defaultActionName: defaultActionName || this.configuration.defaultActionName || DEFAULT_ACTION_NAME,
+      expenseName,
+      actionName,
     });
   }
 
@@ -556,22 +579,22 @@ export class Main implements IMain {
     messageId,
     callbackQueryId,
     expenseBalances,
-    defaultExpenseName,
-    defaultActionName,
+    expenseName,
+    actionName,
   }: {
     expense: Expense;
     chatId: number;
     messageId: number;
     callbackQueryId: string;
     expenseBalances: { userMarkdown: string; expenseBalance: string }[];
-    defaultExpenseName: string;
-    defaultActionName: string;
+    expenseName: string;
+    actionName: string;
   }): Promise<string | void> {
     const text = expense.isDeleted
       ? this.messageService.getDeletedExpenseMessageText({
           expenseId: expense.id,
           createdByUserMarkdown: this.messageService.getUserMarkdown(expense.createdBy),
-          expenseName: expense.expense || defaultExpenseName,
+          expenseName,
         })
       : this.messageService.getMessageText({
           expenseId: expense.id,
@@ -581,15 +604,15 @@ export class Main implements IMain {
           isFree: expense.isFree,
           price: expense.price,
           expenseBalances,
-          expenseName: expense.expense || defaultExpenseName,
-          actionName: defaultActionName,
+          expenseName,
+          actionName,
         });
 
     const replyMarkup = expense.isDeleted
       ? this.messageService.getDeletedExpenseReplyMarkup()
       : expense.isDone
       ? this.messageService.getDoneExpenseReplyMarkup()
-      : this.messageService.getReplyMarkup({ actionName: defaultActionName, isFree: expense.isFree });
+      : this.messageService.getReplyMarkup({ actionName: actionName, isFree: expense.isFree });
 
     try {
       await this.telegramService.editMessageText({

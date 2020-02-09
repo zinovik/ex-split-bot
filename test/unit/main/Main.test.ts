@@ -52,7 +52,7 @@ describe('Main', () => {
     const balance = '999';
     const userMarkdown = 'test-user-markdown';
     const replyMarkup = 'test-reply-markup';
-    const expenseName = 'test-expense';
+    const expenseName = 'test-expense-name';
     const messageBody: IMessageBody = {
       update_id: 0,
       message: {
@@ -155,11 +155,17 @@ describe('Main', () => {
   }
 
   function databaseServiceMockCreateExpense(
-    { price, userId, chatId, expenseName }: { price: number; userId: number; chatId: number; expenseName: string },
+    {
+      price,
+      userId,
+      chatId,
+      expenseName,
+      actionName,
+    }: { price: number; userId: number; chatId: number; expenseName?: string; actionName?: string },
     expenseId: number,
   ): void {
     databaseServiceMock
-      .setup((x: IDatabaseService) => x.createExpense(price, userId, chatId, expenseName))
+      .setup((x: IDatabaseService) => x.createExpense(price, userId, chatId, expenseName, actionName))
       .returns(async () => expenseId)
       .verifiable(Times.once());
   }

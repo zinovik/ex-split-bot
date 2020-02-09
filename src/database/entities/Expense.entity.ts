@@ -58,8 +58,11 @@ export class Expense extends DefaultNamingStrategy {
   @Column('integer', { name: 'message_id' })
   public messageId: number;
 
-  @Column('text', { nullable: true })
-  public expense?: string;
+  @Column('text', { name: 'expense_name', nullable: true })
+  public expenseName?: string;
+
+  @Column('text', { name: 'action_name', nullable: true })
+  public actionName?: string;
 
   @ManyToOne(
     type => User,

@@ -107,11 +107,18 @@ export class PostgresService implements IDatabaseService {
       .update({ user: { id: userId }, group: { id: String(chatId) } }, { amountPrecise: balance });
   }
 
-  async createExpense(price: number, userId: number, chatId: number, expenseName: string): Promise<number> {
+  async createExpense(
+    price: number,
+    userId: number,
+    chatId: number,
+    expenseName?: string,
+    actionName?: string,
+  ): Promise<number> {
     const connection = await this.getConnectionPromise;
     const a = await connection.getRepository(Expense).insert({
       price,
-      expense: expenseName,
+      expenseName,
+      actionName,
       isFree: false,
       isDone: false,
       isDeleted: false,
