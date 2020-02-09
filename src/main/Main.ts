@@ -288,7 +288,7 @@ export class Main implements IMain {
     const expenseName =
       expense.expenseName || defaultExpenseName || this.configuration.defaultExpenseName || DEFAULT_EXPENSE_NAME;
     const actionName =
-      expense.actionName || defaultActionName || this.configuration.defaultExpenseName || DEFAULT_EXPENSE_NAME;
+      expense.actionName || defaultActionName || this.configuration.defaultExpenseName || DEFAULT_ACTION_NAME;
 
     switch (data) {
       case 'split | not split and not pay':
@@ -614,7 +614,7 @@ export class Main implements IMain {
       ? this.messageService.getDeletedExpenseReplyMarkup()
       : expense.isDone
       ? this.messageService.getDoneExpenseReplyMarkup()
-      : this.messageService.getReplyMarkup({ actionName: actionName, isFree: expense.isFree });
+      : this.messageService.getReplyMarkup({ actionName, isFree: expense.isFree });
 
     try {
       await this.telegramService.editMessageText({
