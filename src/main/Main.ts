@@ -20,6 +20,15 @@ const SET_DEFAULT_EXPENSE_NAME_REGEXP = 'set default expense name (.*)';
 const SET_DEFAULT_ACTION_NAME_REGEXP = 'set default action name (.*)';
 const HELP_REGEXP = 'help';
 
+const HELP_TEXT = `bot commands:
+1) who wants to \`(go by)\` \`{taxi}\` for \`[15]\` BYN at \`10\`pm\`?\`
+2) \`set default price 15\`
+3) \`set default expense name taxi\`
+4) \`set default action name go by\`
+5) who wants to go home by taxi at \`10\`pm\`?\`
+6) \`balances link\`
+7) \`help\``;
+
 const DEFAULT_EXPENSE_NAME = 'expense';
 const DEFAULT_ACTION_NAME = 'split';
 
@@ -93,14 +102,7 @@ export class Main implements IMain {
     const commandsRegExp = new RegExp(HELP_REGEXP, 'i');
     if (commandsRegExp.test(messageText)) {
       await this.telegramService.sendMessage({
-        text: `Bot commands:
-1) who wants to (go) home by {taxi} for [15] BYN at 10pm?
-2) set default price 15
-3) set default expense name taxi
-4) set default action name go
-5) who wants to go home by taxi at 10pm?
-6) balance link
-7) help`,
+        text: HELP_TEXT,
         chatId,
         replyMarkup: '',
       });
