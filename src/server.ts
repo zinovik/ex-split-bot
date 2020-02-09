@@ -11,7 +11,6 @@ import { PostgresService } from './database/Postgres.service';
 import { TelegramService } from './telegram/Telegram.service';
 import { MessageService } from './message/Message.service';
 import { ConfigParameterNotDefinedError } from './common/error/ConfigParameterNotDefinedError';
-import { User } from './database/entities/User.entity';
 
 if (process.env.ROLLBAR_ACCESS_TOKEN) {
   const rollbar = new Rollbar({

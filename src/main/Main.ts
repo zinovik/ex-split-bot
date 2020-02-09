@@ -18,6 +18,9 @@ const BALANCES_REGEXP = 'balances link';
 const SET_DEFAULT_PRICE_REGEXP = 'set default price (\\d+(\\.\\d+)?)';
 const SET_DEFAULT_EXPENSE_NAME_REGEXP = 'set default expense name (.*)';
 const SET_DEFAULT_ACTION_NAME_REGEXP = 'set default action name (.*)';
+const REMOVE_DEFAULT_PRICE_REGEXP = 'remove default price';
+const REMOVE_DEFAULT_EXPENSE_NAME_REGEXP = 'remove default expense name';
+const REMOVE_DEFAULT_ACTION_NAME_REGEXP = 'remove default action name';
 const HELP_REGEXP = 'help';
 
 const HELP_TEXT = `bot commands:
@@ -25,9 +28,12 @@ const HELP_TEXT = `bot commands:
 2) \`set default price 15\`
 3) \`set default expense name taxi\`
 4) \`set default action name go by\`
-5) who wants to go home by taxi at \`10\`pm\`?\`
-6) \`balances link\`
-7) \`help\``;
+5) \`remove default price\`
+6) \`remove default expense name\`
+7) \`remove default action name\`
+8) who wants to go home by taxi at \`10\`pm\`?\`
+9) \`balances link\`
+10) \`help\``;
 
 const DEFAULT_EXPENSE_NAME = 'expense';
 const DEFAULT_ACTION_NAME = 'split';
@@ -87,7 +93,8 @@ export class Main implements IMain {
     const balancesRegExp = new RegExp(BALANCES_REGEXP, 'i');
     if (balancesRegExp.test(messageText)) {
       const text = chatUsername
-        ? `${this.configuration.publicUrl}/?group=${chatUsername}` || 'No url set up!'
+        ? `[${this.configuration.publicUrl}/?group=${chatUsername}](${this.configuration.publicUrl}/?group=${chatUsername})` ||
+          'No url set up!'
         : 'Make group public to get a link!';
 
       await this.telegramService.sendMessage({
@@ -158,8 +165,47 @@ export class Main implements IMain {
       return;
     }
 
-    const playRegExp = new RegExp(NEW_EXPENSE_REGEXP, 'gmi');
-    if (!playRegExp.test(messageText)) {
+    const removeDefaultPriceRegexp = new RegExp(REMOVE_DEFAULT_PRICE_REGEXP, 'i');
+    if (removeDefaultPriceRegexp.test(messageText)) {
+      await this.databaseService.removeDefaultPrice(chatId);
+
+      await this.telegramService.sendMessage({
+        text: `Group default price was removed!`,
+        chatId,
+        replyMarkup: '',
+      });
+
+      return;
+    }
+
+    const removeDefaultExpenseNameRegexp = new RegExp(REMOVE_DEFAULT_EXPENSE_NAME_REGEXP, 'i');
+    if (removeDefaultExpenseNameRegexp.test(messageText)) {
+      await this.databaseService.removeDefaultExpenseName(chatId);
+
+      await this.telegramService.sendMessage({
+        text: `Group default expense name was removed!`,
+        chatId,
+        replyMarkup: '',
+      });
+
+      return;
+    }
+
+    const removeDefaultActionNameRegexp = new RegExp(REMOVE_DEFAULT_ACTION_NAME_REGEXP, 'i');
+    if (removeDefaultActionNameRegexp.test(messageText)) {
+      await this.databaseService.removeDefaultActionName(chatId);
+
+      await this.telegramService.sendMessage({
+        text: `Group default action name was removed!`,
+        chatId,
+        replyMarkup: '',
+      });
+
+      return;
+    }
+
+    const newExpenseRegExp = new RegExp(NEW_EXPENSE_REGEXP, 'gmi');
+    if (!newExpenseRegExp.test(messageText)) {
       console.error('No keyword found!');
       return;
     }

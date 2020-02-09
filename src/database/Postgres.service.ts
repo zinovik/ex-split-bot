@@ -251,6 +251,21 @@ export class PostgresService implements IDatabaseService {
     await connection.getRepository(Group).update(chatId, { defaultAction: defaultActionName });
   }
 
+  async removeDefaultPrice(chatId: number): Promise<void> {
+    const connection = await this.getConnectionPromise;
+    await connection.getRepository(Group).update(chatId, { defaultPrice: undefined });
+  }
+
+  async removeDefaultExpenseName(chatId: number): Promise<void> {
+    const connection = await this.getConnectionPromise;
+    await connection.getRepository(Group).update(chatId, { defaultExpense: undefined });
+  }
+
+  async removeDefaultActionName(chatId: number): Promise<void> {
+    const connection = await this.getConnectionPromise;
+    await connection.getRepository(Group).update(chatId, { defaultAction: undefined });
+  }
+
   async getUsers(
     chatUsername: string,
   ): Promise<{ firstName?: string; username?: string; lastName?: string; balance: string }[]> {

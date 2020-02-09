@@ -46,6 +46,10 @@ export interface IDatabaseService {
   setDefaultExpenseName(chatId: number, defaultExpenseName: string | null): Promise<void>;
   setDefaultActionName(chatId: number, defaultActionName: string | null): Promise<void>;
 
+  removeDefaultPrice(chatId: number): Promise<void>;
+  removeDefaultExpenseName(chatId: number): Promise<void>;
+  removeDefaultActionName(chatId: number): Promise<void>;
+
   getUsers(
     chatUsername: string,
   ): Promise<{ firstName?: string; username?: string; lastName?: string; balance: string }[]>;
