@@ -115,7 +115,7 @@ export class PostgresService implements IDatabaseService {
     actionName?: string,
   ): Promise<number> {
     const connection = await this.getConnectionPromise;
-    const a = await connection.getRepository(Expense).insert({
+    const insertResult = await connection.getRepository(Expense).insert({
       price,
       expenseName,
       actionName,
@@ -124,12 +124,11 @@ export class PostgresService implements IDatabaseService {
       isDeleted: false,
       createdBy: { id: userId },
       payBy: { id: userId },
-      playUsers: [{ id: userId }],
       group: { id: String(chatId) },
       messageId: 0,
     });
 
-    const expenseId = a.identifiers[0].id;
+    const expenseId = insertResult.identifiers[0].id;
 
     await this.addPlayUser(expenseId, userId);
 
