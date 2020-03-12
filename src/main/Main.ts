@@ -342,7 +342,7 @@ export class Main implements IMain {
 
         if (!expense.isFree && expense.payBy && expense.payBy.id === userId) {
           await this.telegramService.sendMessage({
-            text: 'Who will pay?',
+            text: `#${expense.id} Who will pay?`,
             chatId,
             replyMarkup: '',
           });
@@ -356,8 +356,8 @@ export class Main implements IMain {
         await this.telegramService.sendMessage({
           text:
             expense.payBy && expense.payBy.id === userId
-              ? 'Who will pay?'
-              : `${this.messageService.getUserMarkdown({ username, firstName, id: userId })} will pay`,
+              ? `#${expense.id} Who will pay?`
+              : `#${expense.id} ${this.messageService.getUserMarkdown({ username, firstName, id: userId })} will pay`,
           chatId,
           replyMarkup: '',
         });
@@ -369,7 +369,7 @@ export class Main implements IMain {
 
         if (expense.isFree) {
           await this.telegramService.sendMessage({
-            text: 'Who will pay?',
+            text: `#${expense.id} Who will pay?`,
             chatId,
             replyMarkup: '',
           });

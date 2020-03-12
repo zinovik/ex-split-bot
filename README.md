@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/zinovik/ex-split-bot.svg?branch=master)](https://travis-ci.org/zinovik/ex-split-bot)
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/b054f198-abad-43cb-8e9c-06251b61bb7d/deploy-status)](https://app.netlify.com/sites/ex-split-bot/deploys)
+[![Netlify Status](https://api.netlify.app/api/v1/badges/b054f198-abad-43cb-8e9c-06251b61bb7d/deploy-status)](https://app.netlify.app/sites/ex-split-bot/deploys)
 
 ![logo](./avatar/exsplitbot.jpg)
 
@@ -16,6 +16,7 @@ Dev ([@ExSplitDevBot](https://t.me/exsplitdevbot)):
 
 - https://app-ex-split-dev-bot-zinovik.cloud.okteto.net?group=exsplitdev
 - https://app-ex-split-dev-bot-zinovik.cloud.okteto.net?group=exsplitdev2
+- https://app-ex-split-dev-bot-zinovik.cloud.okteto.net?group=exsplitdev3
 
 Prod ([@ExSplitBot](https://t.me/exsplitbot)):
 
@@ -42,7 +43,7 @@ curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://app-ex-
 Netlify:
 
 ```bash
-curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://ex-split-bot.netlify.com/.netlify/functions/index?token=<TOKEN>
+curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://ex-split-bot.netlify.app/.netlify/functions/index?token=<TOKEN>
 ```
 
 don't forget to add bot to the Telegram group and add set the administrator role, and disable privacy mode
