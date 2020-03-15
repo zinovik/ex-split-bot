@@ -18,7 +18,6 @@ export class Api implements IApi {
     username: string,
   ): Promise<{ id: number; date: string; balance: string; name?: string; group: string }[]> {
     const expenses = await this.databaseService.getExpenses(username);
-    console.log(expenses);
 
     const expensesWithBalance = expenses.map(expense => {
       const cost = new Fraction(expense.price).div(expense.playUsers.length);
@@ -26,7 +25,7 @@ export class Api implements IApi {
       let balance = new Fraction(0);
 
       if (!expense.isFree) {
-        if (expense.payBy?.username === username) {
+        if (expense.payBy && expense.payBy.username === username) {
           balance = new Fraction(expense.price);
         }
 
