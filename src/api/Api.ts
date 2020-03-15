@@ -25,11 +25,13 @@ export class Api implements IApi {
 
       let balance = new Fraction(0);
 
-      if (expense.payBy?.username === username) {
-        balance = new Fraction(expense.price);
-      }
+      if (!expense.isFree) {
+        if (expense.payBy?.username === username) {
+          balance = new Fraction(expense.price);
+        }
 
-      balance = balance.sub(cost);
+        balance = balance.sub(cost);
+      }
 
       return {
         id: expense.id,
