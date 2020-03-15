@@ -26,6 +26,7 @@
     </div>
 
     <div id="user-view" style="display: none;">
+      <h2 id="user-name"></h2>
       <h2>Expenses</h2>
       <h2 id="balance">Loading...</h2>
       <h2 id="expenses"></h2>
@@ -85,6 +86,7 @@
           case 'username':
             {
               document.getElementById('user-view').style.display = 'block';
+              document.getElementById('user-name').innerHTML = `User: ${parameters.split('=')[1]}`;
 
               const url = `/.netlify/functions/expenses?${parameters}`;
 
