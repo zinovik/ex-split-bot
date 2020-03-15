@@ -50,9 +50,8 @@ export interface IDatabaseService {
   removeDefaultExpenseName(chatId: number): Promise<void>;
   removeDefaultActionName(chatId: number): Promise<void>;
 
-  getUsers(
-    chatUsername: string,
-  ): Promise<{ firstName?: string; username?: string; lastName?: string; balance: string }[]>;
+  getUsers(group: string): Promise<{ firstName?: string; username?: string; lastName?: string; balance: string }[]>;
+  getExpenses(username: string): Promise<Expense[]>;
   getGroupsNames(): Promise<string[]>;
 
   closeConnection(): Promise<void>;

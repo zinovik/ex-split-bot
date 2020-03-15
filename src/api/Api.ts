@@ -7,9 +7,16 @@ export class Api implements IApi {
   }
 
   async getUsers(
-    chatUsername: string,
+    group: string,
   ): Promise<{ firstName?: string; username?: string; lastName?: string; balance: string }[]> {
-    return await this.databaseService.getUsers(chatUsername);
+    return await this.databaseService.getUsers(group);
+  }
+
+  async getExpenses(username: string): Promise<{ id: string; date: string; balance: string; payBy: string }[]> {
+    const expenses = await this.databaseService.getExpenses(username);
+    console.log(expenses);
+
+    return [];
   }
 
   async getGroupsNames(): Promise<string[]> {

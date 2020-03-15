@@ -266,7 +266,7 @@ export class PostgresService implements IDatabaseService {
   }
 
   async getUsers(
-    chatUsername: string,
+    group: string,
   ): Promise<{ firstName?: string; username?: string; lastName?: string; balance: string }[]> {
     const connection = await this.getConnectionPromise;
 
@@ -275,7 +275,7 @@ export class PostgresService implements IDatabaseService {
       .createQueryBuilder('user')
       .select(['user.username', 'user.firstName', 'user.lastName', 'balances.amountPrecise', 'group.username'])
       .leftJoin('user.balances', 'balances')
-      .innerJoin('balances.group', 'group', 'group.username = :chatUsername', { chatUsername })
+      .innerJoin('balances.group', 'group', 'group.username = :chatUsername', { chatUsername: group })
       .getMany();
 
     users.sort((user1, user2) => {
@@ -290,6 +290,45 @@ export class PostgresService implements IDatabaseService {
       balance: u.balances[0] ? u.balances[0].amountPrecise : '0',
       balances: undefined,
     }));
+  }
+
+  async getExpenses(username: string): Promise<Expense[]> {
+    console.log(username);
+
+    const connection = await this.getConnectionPromise;
+    const expenses = await connection
+      .getRepository(Expense)
+      .createQueryBuilder('expense')
+      .select([
+        'expense.id',
+        'expense.price',
+        'expense.messageId',
+        'expense.isFree',
+        'expense.isDone',
+        'expense.isDeleted',
+        'expense.expenseName',
+        'createdBy.id',
+        'createdBy.username',
+        'createdBy.firstName',
+        'createdBy.lastName',
+        'payBy.id',
+        'payBy.username',
+        'payBy.firstName',
+        'payBy.lastName',
+        'playUsers.id',
+        'playUsers.username',
+        'playUsers.firstName',
+        'playUsers.lastName',
+        'balances.amountPrecise',
+      ])
+      .leftJoin('expense.createdBy', 'createdBy')
+      .leftJoin('expense.payBy', 'payBy')
+      .leftJoin('expense.playUsers', 'playUsers')
+      .leftJoin('playUsers.balances', 'balances')
+      // .where({ messageId, group: { id: chatId } })
+      .getMany();
+
+    return expenses;
   }
 
   async getGroupsNames(): Promise<string[]> {

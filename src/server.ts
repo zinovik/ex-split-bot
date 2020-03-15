@@ -1,6 +1,5 @@
 import * as dotenv from 'dotenv';
-import * as http from 'http';
-import * as url from 'url';
+import * as express from 'express';
 import * as fs from 'fs';
 import * as Rollbar from 'rollbar';
 import { promisify } from 'util';
@@ -11,6 +10,8 @@ import { PostgresService } from './database/Postgres.service';
 import { TelegramService } from './telegram/Telegram.service';
 import { MessageService } from './message/Message.service';
 import { ConfigParameterNotDefinedError } from './common/error/ConfigParameterNotDefinedError';
+
+const app = express();
 
 if (process.env.ROLLBAR_ACCESS_TOKEN) {
   const rollbar = new Rollbar({
@@ -34,6 +35,7 @@ if (process.env.APP_TOKEN === undefined) {
   throw new ConfigParameterNotDefinedError('APP_TOKEN');
 }
 
+const PROTOCOL = 'http';
 const HOST = '0.0.0.0';
 const PORT = Number(process.env.PORT) || 9000;
 
@@ -52,97 +54,90 @@ const main = new Main(
 
 const api = new Api(postgresService);
 
-const server = http.createServer((req, res) => {
-  res.statusCode = 200;
-  res.setHeader('Access-Control-Allow-Origin', '*');
+app.get('/index', async (req, res) => {
+  const { token } = req.query;
 
-  let body = '';
-  req.on('readable', () => {
-    body += req.read() || '';
-  });
+  if (token !== process.env.APP_TOKEN) {
+    res.status(401).json({ result: 'wrong token' });
 
-  req.on('end', async () => {
-    const reqUrl = req.url || '';
-    const [route] = reqUrl.split('?');
+    return;
+  }
 
-    const queryStringParameters = url.parse(reqUrl, true).query;
+  try {
+    await main.processMessage(req.body);
+  } catch (error) {
+    console.error('Unexpected error occurred: ', error.message);
+  }
 
-    try {
-      if (route === '/index') {
-        const { token } = queryStringParameters;
-
-        if (token !== process.env.APP_TOKEN) {
-          res.setHeader('Content-Type', 'application/json');
-          res.end(
-            JSON.stringify({
-              statusCode: 401,
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                result: 'wrong token',
-              }),
-            }),
-          );
-
-          return;
-        }
-
-        try {
-          await main.processMessage(body);
-        } catch (error) {
-          console.error('Unexpected error occurred: ', error.message);
-        }
-
-        res.setHeader('Content-Type', 'application/json');
-        res.end(
-          JSON.stringify({
-            result: 'success',
-          }),
-        );
-      } else if (route === '/users') {
-        const { group } = queryStringParameters;
-
-        let users: { firstName?: string; username?: string; lastName?: string; balance: string }[] = [];
-
-        try {
-          users = group ? await api.getUsers(group as string) : [];
-        } catch (error) {
-          console.error('Unexpected error occurred: ', error.message);
-        }
-
-        const body = {
-          result: 'success',
-          users,
-        };
-
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify(body));
-      } else if (route === '/groups') {
-        let groupsNames: string[] = [];
-
-        try {
-          groupsNames = await api.getGroupsNames();
-        } catch (error) {
-          console.error('Unexpected error occurred: ', error.message);
-        }
-
-        const body = {
-          result: 'success',
-          groups: groupsNames,
-        };
-
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify(body));
-      } else {
-        const indexBuffer = await promisify(fs.readFile)(`${process.cwd()}/public/index.html`);
-        const indexString = indexBuffer.toString().replace('/.netlify/functions', '');
-        res.end(indexString);
-      }
-    } catch (error) {
-      res.end(`"${error.message}"`);
-    }
-  });
+  res.json({ result: 'success' });
 });
 
-server.listen(PORT, HOST, () => {
-  console.log(`Server running at http://${HOST}:${PORT}/`);
+app.get('/users', async (req, res) => {
+  const { group } = req.query;
+
+  let users: { firstName?: string; username?: string; lastName?: string; balance: string }[] = [];
+
+  try {
+    users = group ? await api.getUsers(group as string) : [];
+  } catch (error) {
+    console.error('Unexpected error occurred: ', error.message);
+  }
+
+  const body = {
+    result: 'success',
+    users,
+  };
+
+  res.json(body);
+});
+
+app.get('/expenses', async (req, res) => {
+  const { username } = req.query;
+
+  let expenses: {
+    id: string;
+    date: string;
+    balance: string;
+    payBy: string;
+  }[] = [];
+
+  try {
+    expenses = username ? await api.getExpenses(username as string) : [];
+  } catch (error) {
+    console.error('Unexpected error occurred: ', error.message);
+  }
+
+  const body = {
+    result: 'success',
+    expenses,
+  };
+
+  res.json(body);
+});
+
+app.get('/groups', async (req, res) => {
+  let groupsNames: string[] = [];
+
+  try {
+    groupsNames = await api.getGroupsNames();
+  } catch (error) {
+    console.error('Unexpected error occurred: ', error.message);
+  }
+
+  const body = {
+    result: 'success',
+    groups: groupsNames,
+  };
+
+  res.json(body);
+});
+
+app.get('/*', async (req, res) => {
+  const indexBuffer = await promisify(fs.readFile)(`${process.cwd()}/public/index.html`);
+  const indexString = indexBuffer.toString().replace('/.netlify/functions', '');
+  res.end(indexString);
+});
+
+app.listen(PORT, () => {
+  console.log(`server started at ${PROTOCOL}://${HOST}:${PORT}`);
 });
