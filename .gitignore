@@ -3,4 +3,5 @@ node_modules/
 /coverage
 /dist
 /lambda
-yarn.lock
+okteto-kube.config
+okteto-kube-prod.config

@@ -8,23 +8,29 @@
 
 This bot works in a Telegram group. When someone invites others to split expense, the bot sends a message with buttons to determine who will split and who pays for the expense. Then the bot counts users' balances.
 
-You can use it as Okteto Kubernetes service or as Netlify Lambda Functions.
+You can use it as server - entrypoint src/server.js (for example, as Okteto Kubernetes service) or serverless - entrypoint src/lambda (for example, as Netlify Lambda Functions).
 
 ## you can check how it works here
 
 Dev ([@ExSplitDevBot](https://t.me/exsplitdevbot)):
 
-- https://app-ex-split-dev-bot-zinovik.cloud.okteto.net?group=exsplitdev
-- https://app-ex-split-dev-bot-zinovik.cloud.okteto.net?group=exsplitdev2
-- https://app-ex-split-dev-bot-zinovik.cloud.okteto.net?group=exsplitdev3
+1. https://t.me/exsplitdev
 
-Prod ([@ExSplitBot](https://t.me/exsplitbot)):
+   - https://app-ex-split-dev-bot-zinovik.cloud.okteto.net?group=exsplitdev
 
-- https://app-ex-split-bot-zinovik.cloud.okteto.net?group=badmintonbrest
+2. https://t.me/exsplitdev2
 
-## how to setup the bot
+   - https://app-ex-split-dev-bot-zinovik.cloud.okteto.net?group=exsplitdev2
 
-for the development
+3. https://t.me/exsplitdev3
+
+   - https://app-ex-split-dev-bot-zinovik.cloud.okteto.net?group=exsplitdev3
+
+---
+
+## 0. Setting the bot
+
+### 0.1. for the development
 
 ```bash
 ~/ngrok http 9000
@@ -32,21 +38,23 @@ for the development
 curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://<NGROK ID>.ngrok.io/index?token=<TOKEN>
 ```
 
-for the production
+### 0.2. for the production
 
-Okteto:
+Okteto Kubernetes service:
 
 ```bash
 curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://app-ex-split-bot-zinovik.cloud.okteto.net/index?token=<TOKEN>
 ```
 
-Netlify:
+Netlify Lambda Functions:
 
 ```bash
 curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://ex-split-bot.netlify.app/.netlify/functions/index?token=<TOKEN>
 ```
 
-don't forget to add bot to the Telegram group and add set the administrator role, and disable privacy mode
+don't forget to add the bot to the Telegram group, set the administrator role, and disable privacy mode in bot settings!
+
+---
 
 ## 1. Working locally
 
@@ -84,29 +92,37 @@ npm run start:lambda
 ```bash
 curl localhost:9000/index
 curl localhost:9000/users
+curl localhost:9000/groups
+curl localhost:9000/expenses
 ```
 
 ---
 
-## 2. Working with Okteto Kubernetes
+## 2. Working with Okteto Kubernetes service
+
+### 2.1. download okteto-kube.config file
 
 ### 2.1. fill ConfigMap and Secret sections in the k8s.yml file
 
 ### 2.2. set Kubernetes configuration for the Okteto service
 
-KUBECONFIG=~/Downloads/okteto-kube.config kubectl apply -f k8s.yml
+KUBECONFIG=okteto-kube.config kubectl apply -f k8s.yml
 
-### 2.3. connect to the Okteto Kubernetes Postgres database
+---
 
-KUBECONFIG=~/Downloads/okteto-kube.config kubectl port-forward service/postgres 9432:5432
+## 3. Useful Okteto Kubernetes service commands
 
-### 2.4. get application logs from the Kubernetes Okteto service
+### 3.1. connect to the Okteto Kubernetes Postgres database (you can use it instead of docker db locally)
 
-KUBECONFIG=~/Downloads/okteto-kube.config kubectl logs service/app -f
+KUBECONFIG=okteto-kube.config kubectl port-forward service/postgres 9432:5432
 
-### 2.5. update deployment on the Kubernetes Okteto service
+### 3.2. get application logs from the Kubernetes Okteto service (debugging)
 
-KUBECONFIG=~/Downloads/okteto-kube.config kubectl rollout restart deployment.apps/ex-split-bot
+KUBECONFIG=okteto-kube.config kubectl logs service/app -f
+
+### 3.3. update deployment on the Kubernetes Okteto service (after updating image)
+
+KUBECONFIG=okteto-kube.config kubectl rollout restart deployment.apps/ex-split-bot
 
 ## P. S.
 

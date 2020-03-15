@@ -296,36 +296,32 @@ export class PostgresService implements IDatabaseService {
     console.log(username);
 
     const connection = await this.getConnectionPromise;
+
+    const user = (await connection
+      .getRepository(User)
+      .createQueryBuilder('user')
+      .select(['user.id'])
+      .where({ username })
+      .getOne()) || { id: null };
+
     const expenses = await connection
       .getRepository(Expense)
       .createQueryBuilder('expense')
       .select([
         'expense.id',
         'expense.price',
-        'expense.messageId',
-        'expense.isFree',
-        'expense.isDone',
-        'expense.isDeleted',
         'expense.expenseName',
         'createdBy.id',
         'createdBy.username',
-        'createdBy.firstName',
-        'createdBy.lastName',
         'payBy.id',
         'payBy.username',
-        'payBy.firstName',
-        'payBy.lastName',
         'playUsers.id',
         'playUsers.username',
-        'playUsers.firstName',
-        'playUsers.lastName',
-        'balances.amountPrecise',
       ])
       .leftJoin('expense.createdBy', 'createdBy')
       .leftJoin('expense.payBy', 'payBy')
       .leftJoin('expense.playUsers', 'playUsers')
-      .leftJoin('playUsers.balances', 'balances')
-      // .where({ messageId, group: { id: chatId } })
+      .where({ isFree: false, isDone: true, isDeleted: false, createdBy: { id: user.id } })
       .getMany();
 
     return expenses;

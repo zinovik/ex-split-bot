@@ -16,6 +16,7 @@ export class Api implements IApi {
     const expenses = await this.databaseService.getExpenses(username);
     console.log(expenses);
 
+    // return (expenses as any) as { id: string; date: string; balance: string; payBy: string }[];
     return [];
   }
 
