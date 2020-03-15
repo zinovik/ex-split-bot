@@ -8,50 +8,151 @@
   </head>
 
   <body>
-    <h1>ExSplitBot</h1>
+    <h1><a href="/">ExSplitBot</a></h1>
 
-    <h2 style="color: green;">Lenders</h2>
-    <h2 id="lenders">Loading...</h2>
+    <div id="group-view" style="display: none;">
+      <h2 id="group-name"></h2>
 
-    <h2 style="color: red;">Debtors</h2>
-    <h2 id="debtors">Loading...</h2>
+      <h2 style="color: green;">Lenders</h2>
+      <h2 id="lenders">Loading...</h2>
+
+      <h2 style="color: red;">Debtors</h2>
+      <h2 id="debtors">Loading...</h2>
+    </div>
+
+    <div id="groups-view" style="display: none;">
+      <h2>Groups</h2>
+      <h2 id="groups">Loading...</h2>
+    </div>
+
+    <div id="user-view" style="display: none;">
+      <h2>Expenses</h2>
+      <h2 id="balance">Loading...</h2>
+      <h2 id="expenses"></h2>
+    </div>
 
     <script>
       (async () => {
         const parameters = window.location.search.substring(1);
+        const view = parameters.split('=')[0];
 
-        const url = `/.netlify/functions/users?${parameters}`;
+        switch (view) {
+          case 'group':
+            {
+              document.getElementById('group-view').style.display = 'block';
+              document.getElementById('group-name').innerHTML = `Group: @${parameters.split('=')[1]}`;
 
-        const response = await fetch(url);
-        const { users } = await response.json();
+              const url = `/.netlify/functions/users?${parameters}`;
 
-        const ulLenders = document.createElement('ul');
-        const ulDebtors = document.createElement('ul');
+              const response = await fetch(url);
+              const { users } = await response.json();
 
-        users.forEach(user => {
-          if (user.balance === '0') {
-            return;
+              const ulLenders = document.createElement('ul');
+              const ulDebtors = document.createElement('ul');
+
+              users.forEach(user => {
+                if (user.balance === '0') {
+                  return;
+                }
+
+                const username = user.firstName || user.username || '<unknown>';
+
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                if (user.username) {
+                  a.href = `?username=${user.username}`;
+                }
+                a.innerHTML = username;
+                const text = document.createTextNode(`: ${user.balance} BYN`);
+
+                li.appendChild(a);
+                li.appendChild(text);
+
+                if (user.balance[0] === '-') {
+                  ulDebtors.insertBefore(li, ulDebtors.firstChild);
+                } else {
+                  ulLenders.appendChild(li);
+                }
+              });
+
+              document.getElementById('lenders').firstChild.remove();
+              document.getElementById('debtors').firstChild.remove();
+
+              document.getElementById('lenders').appendChild(ulLenders);
+              document.getElementById('debtors').appendChild(ulDebtors);
+            }
+            break;
+          case 'username':
+            {
+              document.getElementById('user-view').style.display = 'block';
+
+              const url = `/.netlify/functions/expenses?${parameters}`;
+
+              const response = await fetch(url);
+              const { expenses, balance } = await response.json();
+
+              const ul = document.createElement('ul');
+
+              expenses.forEach(expense => {
+                const li = document.createElement('li');
+                const span1 = document.createElement('span');
+                const span2 = document.createElement('span');
+                const span3 = document.createElement('span');
+                const a = document.createElement('a');
+                const span4 = document.createElement('span');
+                span1.innerHTML = `${new Date(expense.date).toLocaleDateString('ru-RU')}: `;
+                span2.innerHTML = expense.balance;
+                span3.innerHTML = ` (`;
+                a.href = `?group=${expense.group}`;
+                a.innerHTML = expense.group;
+                span4.innerHTML = `)`;
+
+                span2.style.color = expense.balance === '0' ? 'black' : expense.balance[0] === '-' ? 'red' : 'green';
+
+                li.appendChild(span1);
+                li.appendChild(span2);
+                li.appendChild(span3);
+                li.appendChild(a);
+                li.appendChild(span4);
+                ul.appendChild(li);
+              });
+
+              document.getElementById('balance').firstChild.remove();
+              const span1 = document.createElement('span');
+              const span2 = document.createElement('span');
+              span1.innerHTML = 'Balance: ';
+              span2.innerHTML = balance;
+              span2.style.color = balance === '0' ? 'black' : balance[0] === '-' ? 'red' : 'green';
+              document.getElementById('balance').appendChild(span1);
+              document.getElementById('balance').appendChild(span2);
+
+              document.getElementById('expenses').appendChild(ul);
+            }
+            break;
+          default: {
+            document.getElementById('groups-view').style.display = 'block';
+
+            const url = `/.netlify/functions/groups`;
+
+            const response = await fetch(url);
+            const { groups } = await response.json();
+
+            const ul = document.createElement('ul');
+
+            groups.forEach(group => {
+              const li = document.createElement('li');
+              const a = document.createElement('a');
+              a.href = `?group=${group}`;
+              a.innerHTML = `@${group}`;
+
+              li.appendChild(a);
+              ul.appendChild(li);
+            });
+
+            document.getElementById('groups').firstChild.remove();
+            document.getElementById('groups').appendChild(ul);
           }
-
-          const username = user.firstName || user.username || '<unknown>';
-
-          const li = document.createElement('li');
-          const text = document.createTextNode(`${username}: ${user.balance} BYN`);
-
-          li.appendChild(text);
-
-          if (user.balance[0] === '-') {
-            ulDebtors.insertBefore(li, ulDebtors.firstChild);
-          } else {
-            ulLenders.appendChild(li);
-          }
-        });
-
-        document.getElementById('lenders').firstChild.remove();
-        document.getElementById('debtors').firstChild.remove();
-
-        document.getElementById('lenders').appendChild(ulLenders);
-        document.getElementById('debtors').appendChild(ulDebtors);
+        }
       })();
     </script>
   </body>

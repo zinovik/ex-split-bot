@@ -1,6 +1,6 @@
 import * as url from 'url';
 import Fraction from 'fraction.js';
-import { createConnection, Connection } from 'typeorm';
+import { createConnection, Connection, In } from 'typeorm';
 
 import { IDatabaseService } from './IDatabaseService.interface';
 import { User } from './entities/User.entity';
@@ -304,6 +304,30 @@ export class PostgresService implements IDatabaseService {
       .where({ username })
       .getOne()) || { id: null };
 
+    const expensesWithoutSplitUsers = await connection
+      .getRepository(Expense)
+      .createQueryBuilder('expense')
+      .select([
+        'expense.id',
+        'expense.price',
+        'expense.expenseName',
+        'expense.createdAt',
+        'payBy.id',
+        'payBy.username',
+        'playUsers.id',
+        'playUsers.username',
+        'group.username',
+        'group.id',
+      ])
+      .leftJoin('expense.payBy', 'payBy')
+      .leftJoin('expense.playUsers', 'playUsers')
+      .leftJoin('playUsers.balances', 'balances')
+      .leftJoin('expense.group', 'group')
+      .where({ isDone: true, isDeleted: false })
+      .andWhere('(playUsers.id = :id OR payBy.id = :id)', { id: user.id })
+      .orderBy('expense.id')
+      .getMany();
+
     const expenses = await connection
       .getRepository(Expense)
       .createQueryBuilder('expense')
@@ -311,17 +335,20 @@ export class PostgresService implements IDatabaseService {
         'expense.id',
         'expense.price',
         'expense.expenseName',
-        'createdBy.id',
-        'createdBy.username',
+        'expense.createdAt',
         'payBy.id',
         'payBy.username',
         'playUsers.id',
         'playUsers.username',
+        'group.username',
+        'group.id',
       ])
-      .leftJoin('expense.createdBy', 'createdBy')
       .leftJoin('expense.payBy', 'payBy')
       .leftJoin('expense.playUsers', 'playUsers')
-      .where({ isFree: false, isDone: true, isDeleted: false, createdBy: { id: user.id } })
+      .leftJoin('playUsers.balances', 'balances')
+      .leftJoin('expense.group', 'group')
+      .where({ id: In(expensesWithoutSplitUsers.map(e => e.id)) })
+      .orderBy('expense.id', 'DESC')
       .getMany();
 
     return expenses;

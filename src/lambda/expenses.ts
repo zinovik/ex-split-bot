@@ -17,10 +17,11 @@ exports.handler = async (event: IEvent, context: never) => {
   const api = new Api(postgresService);
 
   let expenses: {
-    id: string;
+    id: number;
     date: string;
     balance: string;
-    payBy: string;
+    name?: string;
+    group: string;
   }[] = [];
 
   const username = event.queryStringParameters.group;
@@ -40,6 +41,7 @@ exports.handler = async (event: IEvent, context: never) => {
   const body = {
     result: 'success',
     expenses,
+    balance: api.getBalance(expenses),
   };
 
   return {

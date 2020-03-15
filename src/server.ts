@@ -97,10 +97,11 @@ app.get('/expenses', async (req, res) => {
   const { username } = req.query;
 
   let expenses: {
-    id: string;
+    id: number;
     date: string;
     balance: string;
-    payBy: string;
+    name?: string;
+    group: string;
   }[] = [];
 
   try {
@@ -112,6 +113,7 @@ app.get('/expenses', async (req, res) => {
   const body = {
     result: 'success',
     expenses,
+    balance: api.getBalance(expenses),
   };
 
   res.json(body);
@@ -136,7 +138,7 @@ app.get('/groups', async (req, res) => {
 
 app.get('/*', async (req, res) => {
   const indexBuffer = await promisify(fs.readFile)(`${process.cwd()}/public/index.html`);
-  const indexString = indexBuffer.toString().replace('/.netlify/functions', '');
+  const indexString = indexBuffer.toString().replace(new RegExp('/.netlify/functions', 'g'), '');
   res.end(indexString);
 });
 
