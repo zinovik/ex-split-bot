@@ -1,5 +1,6 @@
 import * as dotenv from 'dotenv';
 import * as express from 'express';
+import * as bodyParser from 'body-parser';
 import * as fs from 'fs';
 import * as Rollbar from 'rollbar';
 import { promisify } from 'util';
@@ -12,6 +13,7 @@ import { MessageService } from './message/Message.service';
 import { ConfigParameterNotDefinedError } from './common/error/ConfigParameterNotDefinedError';
 
 const app = express();
+app.use(bodyParser.json());
 
 if (process.env.ROLLBAR_ACCESS_TOKEN) {
   const rollbar = new Rollbar({
@@ -54,7 +56,7 @@ const main = new Main(
 
 const api = new Api(postgresService);
 
-app.get('/index', async (req, res) => {
+app.post('/index', async (req, res) => {
   const { token } = req.query;
 
   if (token !== process.env.APP_TOKEN) {
@@ -64,7 +66,7 @@ app.get('/index', async (req, res) => {
   }
 
   try {
-    await main.processMessage(req.body);
+    await main.processMessage(JSON.stringify(req.body));
   } catch (error) {
     console.error('Unexpected error occurred: ', error.message);
   }
