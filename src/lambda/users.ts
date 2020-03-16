@@ -16,7 +16,7 @@ exports.handler = async (event: IEvent, context: never) => {
 
   const api = new Api(postgresService);
 
-  let users: { firstName?: string; username?: string; lastName?: string; balance: string }[] = [];
+  let users: { firstName?: string; username?: string; lastName?: string; balance: string; id: number }[] = [];
 
   const group = event.queryStringParameters.group;
 

@@ -24,10 +24,10 @@ exports.handler = async (event: IEvent, context: never) => {
     group: string;
   }[] = [];
 
-  const username = event.queryStringParameters.group;
+  const id = event.queryStringParameters.id;
 
   try {
-    expenses = username ? await api.getExpenses(username) : [];
+    expenses = id ? await api.getExpenses(Number(id)) : [];
   } catch (error) {
     console.error('Unexpected error occurred: ', error.message);
   }

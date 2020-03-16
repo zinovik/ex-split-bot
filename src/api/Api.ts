@@ -10,14 +10,15 @@ export class Api implements IApi {
 
   async getUsers(
     group: string,
-  ): Promise<{ firstName?: string; username?: string; lastName?: string; balance: string }[]> {
+  ): Promise<{ firstName?: string; username?: string; lastName?: string; balance: string; id: number }[]> {
     return await this.databaseService.getUsers(group);
   }
 
   async getExpenses(
-    username: string,
+    id: number,
   ): Promise<{ id: number; date: string; balance: string; name?: string; group: string }[]> {
-    const expenses = await this.databaseService.getExpenses(username);
+    console.log(3);
+    const expenses = await this.databaseService.getExpenses(id);
 
     const expensesWithBalance = expenses.map(expense => {
       const cost = new Fraction(expense.price).div(expense.playUsers.length);
@@ -25,7 +26,7 @@ export class Api implements IApi {
       let balance = new Fraction(0);
 
       if (!expense.isFree) {
-        if (expense.payBy && expense.payBy.username === username) {
+        if (expense.payBy && expense.payBy.id === id) {
           balance = new Fraction(expense.price);
         }
 

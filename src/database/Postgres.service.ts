@@ -267,13 +267,20 @@ export class PostgresService implements IDatabaseService {
 
   async getUsers(
     group: string,
-  ): Promise<{ firstName?: string; username?: string; lastName?: string; balance: string }[]> {
+  ): Promise<{ firstName?: string; username?: string; lastName?: string; balance: string; id: number }[]> {
     const connection = await this.getConnectionPromise;
 
     const users = await connection
       .getRepository(User)
       .createQueryBuilder('user')
-      .select(['user.username', 'user.firstName', 'user.lastName', 'balances.amountPrecise', 'group.username'])
+      .select([
+        'user.id',
+        'user.username',
+        'user.firstName',
+        'user.lastName',
+        'balances.amountPrecise',
+        'group.username',
+      ])
       .leftJoin('user.balances', 'balances')
       .innerJoin('balances.group', 'group', 'group.username = :chatUsername', { chatUsername: group })
       .getMany();
@@ -292,17 +299,8 @@ export class PostgresService implements IDatabaseService {
     }));
   }
 
-  async getExpenses(username: string): Promise<Expense[]> {
-    console.log(username);
-
+  async getExpenses(id: number): Promise<Expense[]> {
     const connection = await this.getConnectionPromise;
-
-    const user = (await connection
-      .getRepository(User)
-      .createQueryBuilder('user')
-      .select(['user.id'])
-      .where({ username })
-      .getOne()) || { id: null };
 
     const expensesWithoutSplitUsers = await connection
       .getRepository(Expense)
@@ -325,7 +323,7 @@ export class PostgresService implements IDatabaseService {
       .leftJoin('playUsers.balances', 'balances')
       .leftJoin('expense.group', 'group')
       .where({ isDone: true, isDeleted: false })
-      .andWhere('(playUsers.id = :id OR payBy.id = :id)', { id: user.id })
+      .andWhere('(playUsers.id = :id OR payBy.id = :id)', { id })
       .orderBy('expense.id')
       .getMany();
 

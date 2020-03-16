@@ -77,7 +77,7 @@ app.post('/index', async (req, res) => {
 app.get('/users', async (req, res) => {
   const { group } = req.query;
 
-  let users: { firstName?: string; username?: string; lastName?: string; balance: string }[] = [];
+  let users: { firstName?: string; username?: string; lastName?: string; balance: string; id: number }[] = [];
 
   try {
     users = group ? await api.getUsers(group as string) : [];
@@ -94,7 +94,7 @@ app.get('/users', async (req, res) => {
 });
 
 app.get('/expenses', async (req, res) => {
-  const { username } = req.query;
+  const { id } = req.query;
 
   let expenses: {
     id: number;
@@ -105,7 +105,7 @@ app.get('/expenses', async (req, res) => {
   }[] = [];
 
   try {
-    expenses = username ? await api.getExpenses(username as string) : [];
+    expenses = id ? await api.getExpenses(Number(id)) : [];
   } catch (error) {
     console.error('Unexpected error occurred: ', error.message);
   }
