@@ -20,7 +20,7 @@ describe('Api', () => {
 
   it('Should return users', async () => {
     // Arrange
-    const initialUsers = [{ balance: '' }];
+    const initialUsers = [{ balance: '', id: 123 }];
     const chatUsername = 'test-chat-username';
     databaseServiceMockGetUsers(chatUsername, initialUsers);
 
@@ -33,7 +33,7 @@ describe('Api', () => {
 
   function databaseServiceMockGetUsers(
     chatUsername: string,
-    users: { firstName?: string; username?: string; lastName?: string; balance: string }[],
+    users: { firstName?: string; username?: string; lastName?: string; balance: string; id: number }[],
   ): void {
     databaseServiceMock
       .setup((x: IDatabaseService) => x.getUsers(chatUsername))
