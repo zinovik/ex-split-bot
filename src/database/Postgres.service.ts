@@ -299,6 +299,22 @@ export class PostgresService implements IDatabaseService {
     }));
   }
 
+  async getUsername(id: number): Promise<string> {
+    const connection = await this.getConnectionPromise;
+
+    const user = await connection
+      .getRepository(User)
+      .createQueryBuilder('user')
+      .select(['user.id', 'user.username', 'user.firstName', 'user.lastName'])
+      .where({ id })
+      .getOne();
+
+    if (user) {
+      return user.firstName || user.username || String(user.id);
+    }
+
+    return '';
+  }
   async getExpenses(id: number): Promise<Expense[]> {
     const connection = await this.getConnectionPromise;
 

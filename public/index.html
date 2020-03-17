@@ -26,10 +26,10 @@
     </div>
 
     <div id="user-view" style="display: none;">
-      <h2 id="user-id"></h2>
+      <h2 id="user-name">User: Loading...</h2>
+      <h2 id="balance">Total balance: Loading...</h2>
       <h2>Expenses</h2>
-      <h2 id="balance"></h2>
-      <h5 id="expenses">Loading...</h5>
+      <h3 id="expenses">Loading...</h3>
     </div>
 
     <script>
@@ -84,44 +84,61 @@
           case 'id':
             {
               document.getElementById('user-view').style.display = 'block';
-              document.getElementById('user-id').innerHTML = `User ID: ${parameters.split('=')[1]}`;
 
               const url = `/.netlify/functions/expenses?${parameters}`;
 
               const response = await fetch(url);
-              const { expenses, balance } = await response.json();
+              const { username, balance, groups } = await response.json();
 
               const ul = document.createElement('ul');
 
-              expenses.forEach(expense => {
-                const li = document.createElement('li');
+              groups.forEach(group => {
+                const liGroup = document.createElement('li');
+                const div1 = document.createElement('div');
                 const span1 = document.createElement('span');
+                const a = document.createElement('a');
+                const div2 = document.createElement('div');
                 const span2 = document.createElement('span');
                 const span3 = document.createElement('span');
-                const a = document.createElement('a');
-                const span4 = document.createElement('span');
-                span1.innerHTML = `${new Date(expense.date).toLocaleDateString('ru-RU')}: `;
-                span2.innerHTML = expense.balance;
-                span3.innerHTML = ` (`;
-                a.href = `?group=${expense.group}`;
-                a.innerHTML = expense.group;
-                span4.innerHTML = `)`;
+                span1.innerHTML = 'Group: ';
+                a.href = `?group=${group.name}`;
+                a.innerHTML = `@${group.name}`;
+                span2.innerHTML = 'Balance: ';
+                span3.innerHTML = group.balance;
+                span3.style.color = group.balance === '0' ? 'black' : group.balance[0] === '-' ? 'red' : 'green';
+                div1.appendChild(span1);
+                div1.appendChild(a);
+                div2.appendChild(span2);
+                div2.appendChild(span3);
+                const ulExpenses = document.createElement('ul');
 
-                span2.style.color = expense.balance === '0' ? 'black' : expense.balance[0] === '-' ? 'red' : 'green';
+                group.expenses.forEach(expense => {
+                  const li = document.createElement('li');
+                  const span1 = document.createElement('span');
+                  const span2 = document.createElement('span');
+                  span1.innerHTML = `${new Date(expense.date).toLocaleDateString('ru-RU')}: `;
+                  span2.innerHTML = expense.balance;
 
-                li.appendChild(span1);
-                li.appendChild(span2);
-                li.appendChild(span3);
-                li.appendChild(a);
-                li.appendChild(span4);
-                ul.appendChild(li);
+                  span2.style.color = expense.balance === '0' ? 'black' : expense.balance[0] === '-' ? 'red' : 'green';
+
+                  li.appendChild(span1);
+                  li.appendChild(span2);
+                  ulExpenses.appendChild(li);
+                });
+
+                liGroup.appendChild(div1);
+                liGroup.appendChild(div2);
+                liGroup.appendChild(ulExpenses);
+                ul.appendChild(liGroup);
               });
 
+              document.getElementById('user-name').innerHTML = `User: ${username}`;
               const span1 = document.createElement('span');
               const span2 = document.createElement('span');
-              span1.innerHTML = 'Balance: ';
+              span1.innerHTML = 'Total balance: ';
               span2.innerHTML = balance;
               span2.style.color = balance === '0' ? 'black' : balance[0] === '-' ? 'red' : 'green';
+              document.getElementById('balance').firstChild.remove();
               document.getElementById('balance').appendChild(span1);
               document.getElementById('balance').appendChild(span2);
 

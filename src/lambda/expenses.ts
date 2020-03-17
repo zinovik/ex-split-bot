@@ -17,17 +17,25 @@ exports.handler = async (event: IEvent, context: never) => {
   const api = new Api(postgresService);
 
   let expenses: {
-    id: number;
-    date: string;
+    username: string;
     balance: string;
-    name?: string;
-    group: string;
-  }[] = [];
+    groups: {
+      name: string;
+      balance: string;
+      expenses: { id: number; date: string; balance: string; name?: string }[];
+    }[];
+  } = {
+    username: '',
+    balance: '0',
+    groups: [],
+  };
 
   const id = event.queryStringParameters.id;
 
   try {
-    expenses = id ? await api.getExpenses(Number(id)) : [];
+    if (id) {
+      expenses = await api.getExpenses(Number(id));
+    }
   } catch (error) {
     console.error('Unexpected error occurred: ', error.message);
   }
@@ -40,8 +48,7 @@ exports.handler = async (event: IEvent, context: never) => {
 
   const body = {
     result: 'success',
-    expenses,
-    balance: api.getBalance(expenses),
+    ...expenses,
   };
 
   return {

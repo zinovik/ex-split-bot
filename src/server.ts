@@ -97,23 +97,30 @@ app.get('/expenses', async (req, res) => {
   const { id } = req.query;
 
   let expenses: {
-    id: number;
-    date: string;
+    username: string;
     balance: string;
-    name?: string;
-    group: string;
-  }[] = [];
+    groups: {
+      name: string;
+      balance: string;
+      expenses: { id: number; date: string; balance: string; name?: string }[];
+    }[];
+  } = {
+    username: '',
+    balance: '0',
+    groups: [],
+  };
 
   try {
-    expenses = id ? await api.getExpenses(Number(id)) : [];
+    if (id) {
+      expenses = await api.getExpenses(Number(id));
+    }
   } catch (error) {
     console.error('Unexpected error occurred: ', error.message);
   }
 
   const body = {
     result: 'success',
-    expenses,
-    balance: api.getBalance(expenses),
+    ...expenses,
   };
 
   res.json(body);

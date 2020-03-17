@@ -53,6 +53,7 @@ export interface IDatabaseService {
   getUsers(
     group: string,
   ): Promise<{ firstName?: string; username?: string; lastName?: string; balance: string; id: number }[]>;
+  getUsername(id: number): Promise<string>;
   getExpenses(id: number): Promise<Expense[]>;
   getGroupsNames(): Promise<string[]>;
 
