@@ -4,7 +4,7 @@ kind: ConfigMap
 metadata:
   name: ex-split-bot-configmap
 data:
-  public_url: 'https://app-ex-split-bot-zinovik.cloud.okteto.net'
+  public_url: 'https://app-zinovik.cloud.okteto.net'
 
 ---
 apiVersion: v1

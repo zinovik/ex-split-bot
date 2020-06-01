@@ -4,4 +4,3 @@ node_modules/
 /dist
 /lambda
 okteto-kube.config
-okteto-kube-prod.config

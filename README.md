@@ -16,15 +16,15 @@ Dev ([@ExSplitDevBot](https://t.me/exsplitdevbot)):
 
 1. https://t.me/exsplitdev
 
-   - https://app-ex-split-dev-bot-zinovik.cloud.okteto.net?group=exsplitdev
+   - https://app-zinovik.cloud.okteto.net?group=exsplitdev
 
 2. https://t.me/exsplitdev2
 
-   - https://app-ex-split-dev-bot-zinovik.cloud.okteto.net?group=exsplitdev2
+   - https://app-zinovik.cloud.okteto.net?group=exsplitdev2
 
 3. https://t.me/exsplitdev3
 
-   - https://app-ex-split-dev-bot-zinovik.cloud.okteto.net?group=exsplitdev3
+   - https://app-zinovik.cloud.okteto.net?group=exsplitdev3
 
 ---
 
@@ -43,7 +43,7 @@ curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://<NGROK 
 Okteto Kubernetes service:
 
 ```bash
-curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://app-ex-split-bot-zinovik.cloud.okteto.net/index?token=<TOKEN>
+curl https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=https://app-zinovik.cloud.okteto.net/index?token=<TOKEN>
 ```
 
 Netlify Lambda Functions:
