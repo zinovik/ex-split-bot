@@ -15,7 +15,7 @@
     "fraction.js": "^4.0.12",
     "pg": "^7.18.2",
     "rollbar": "^2.15.0",
-    "typeorm": "^0.2.24"
+    "typeorm": "^0.2.25"
   },
   "devDependencies": {
     "@babel/plugin-proposal-decorators": "^7.8.3",
